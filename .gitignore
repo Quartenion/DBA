@@ -12,6 +12,7 @@ nbproject/genfiles.properties
 # Archivos generados por el IDE
 *.class
 *.jar
+!lib/jade/lib/jade.jar
 *.war
 *.ear
 *.zip
