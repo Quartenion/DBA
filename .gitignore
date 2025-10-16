@@ -1,0 +1,33 @@
+# NetBeans
+/nbproject/private/
+build/
+dist/
+nbbuild/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Archivos generados por el IDE
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.log
+
+# Carpetas de salida
+/target/          # Maven
+/out/             # Gradle o algunos proyectos
+/bin/             # A veces usado en proyectos Ant
+
+# Archivos temporales y del sistema
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*~
+
+# Archivos de configuración local (opcional, pero común)
+!.gitignore
