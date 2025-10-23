@@ -1,14 +1,15 @@
 # NetBeans
-/nbproject/private/
-build
+build/
 build/*
 dist/
 nbbuild/
 nbdist/
 nbactions.xml
 nb-configuration.xml
+/nbproject/private/
 nbproject/build-impl.xml
 nbproject/genfiles.properties
+
 
 # Archivos generados por el IDE
 *.class
