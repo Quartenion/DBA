@@ -26,11 +26,13 @@ public class Launcher {
     
     public static void main(String[] args) {
         
+        // Cogemos el mapa del mundo
         mundo m = new mundo();
         String rutaMapa = "./maps/mapWithComplexObstacle1.txt";
         m.leer_mapa(rutaMapa);
 
         int[][] mapa = m.getMapa();
+        
         /* De esta forma obtenemos la instancia de ejecucion de jade para 
            para crear nuestros propios contenedores y agentes */
         jade.core.Runtime rt = jade.core.Runtime.instance();
