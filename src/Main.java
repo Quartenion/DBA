@@ -3,7 +3,7 @@ import mundo.mundo;
 public class Main {
     public static void main(String[] args) {
         mundo m = new mundo();
-        String rutaMapa = "/Users/juanra/Downloads/maps/mapWithComplexObstacle1.txt";
+        String rutaMapa = "/home/quartenion/Escritorio/DBA/Practica2DBA/maps/mapWithComplexObstacle1.txt";
         m.leer_mapa(rutaMapa);
 
         int[][] mapa = m.getMapa();
