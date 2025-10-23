@@ -1,6 +1,7 @@
 # NetBeans
 /nbproject/private/
-build/
+build
+build/*
 dist/
 nbbuild/
 nbdist/

@@ -20,6 +20,8 @@ public class Controller {
         this.view = view;
         this.model = model;
         
+        createEventListeners();
+        
         /*
         // Here we establish the events listeners
         this.view.getBtnIncrementar().addActionListener(e -> {
@@ -37,5 +39,7 @@ public class Controller {
     }
     
     // Functions to control the app
-    
+    private void createEventListeners(){
+        
+    }
 }
