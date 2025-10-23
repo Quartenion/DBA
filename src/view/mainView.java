@@ -9,13 +9,14 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 
-import model.Example;
+import model.AgentP2;
+import model.AgentModel;
 
 
 public class mainView extends JFrame{
     
     // Model
-    private Example model;
+    private AgentModel model;
     
     // View elements (we can create our own classes)
     private JLabel labelContador;
@@ -27,7 +28,7 @@ public class mainView extends JFrame{
      * Sets the main configuration of the main JFrame
      * Adds the other views (matrix of the field and the data of the agent)
      */
-    public mainView(Example model){
+    public mainView(AgentModel model){
         
         // Save the model
         this.model = model;

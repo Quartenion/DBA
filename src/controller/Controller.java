@@ -7,18 +7,20 @@ package controller;
 
 
 import javax.swing.*;
-import model.Example;
+import model.AgentP2;
+import model.AgentModel;
 import view.mainView;
 
 public class Controller {
     
     private mainView view;
-    private Example model;
+    private AgentModel model;
     
-    public Controller(mainView view, Example model){
+    public Controller(mainView view, AgentModel model){
         this.view = view;
         this.model = model;
         
+        /*
         // Here we establish the events listeners
         this.view.getBtnIncrementar().addActionListener(e -> {
             model.incrementar();
@@ -31,6 +33,7 @@ public class Controller {
         });
         
         this.view.setContador(model.getContador());
+        */
     }
     
     // Functions to control the app
