@@ -5,30 +5,52 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class mundo {
-    private int[][] mapa; 
+    private int[][] map;
+    private int rows;
+    private int columns;
 
     public void leer_mapa(String rutaArchivo) {
     try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
-        int filas = Integer.parseInt(br.readLine().trim());
-        int columnas = Integer.parseInt(br.readLine().trim());
+        
+        setRows(Integer.parseInt(br.readLine().trim()));
+        setColumns(Integer.parseInt(br.readLine().trim()));
 
-        mapa = new int[filas][columnas];
+        int[][] newMap = new int[getRows()][getColumns()];
 
-        for (int i = 0; i < filas; i++) {
+        for (int i = 0; i < getRows(); i++) {
             String linea = br.readLine();
             String[] valores = linea.trim().split("\\t");
-            for (int j = 0; j < columnas; j++) {
-                mapa[i][j] = Integer.parseInt(valores[j]);
+            for (int j = 0; j < getColumns(); j++) {
+                newMap[i][j] = Integer.parseInt(valores[j]);
             }
         }
+        
+        setMap(newMap);
 
     } catch (IOException | NumberFormatException e) {
         System.out.println("Error al leer el archivo: " + e.getMessage());
+      }
     }
-}
-
-
-    public int[][] getMapa() {
-        return mapa;
+    
+    public int getRows(){
+        return this.rows;
+    }
+    
+    public int getColumns(){
+        return this.columns;
+    }
+    
+    public int[][] getMap() {
+        return map;
+    }
+    
+    public void setRows(int rows){
+        this.rows = rows;
+    }
+    public void setColumns(int columns){
+        this.columns = columns;
+    }
+    public void setMap(int[][] map){
+        this.map = map;
     }
 }
