@@ -14,18 +14,21 @@ import model.World;
 public class matrixView extends JPanel{
     
     private World world;
-    private final int cellSize = 40; // Tamaño de cada celda en píxeles
-    
+    private int panelSize = 800; // Tamaño total fijo del panel (en píxeles)
+    private int cellSize; // Tamaño de cada celda en píxeles
     
     public matrixView(World world){
         
         this.world = world;
         
+        // Calculamos el tamaño de la celda según el número de filas y columnas
+        int rows = world.getRows();
+        int cols = world.getColumns();
+        this.cellSize = Math.min(panelSize / rows, panelSize / cols);
+
+        // Mantenemos el panel cuadrado, del tamaño fijo
         setLayout(new GridLayout(world.getRows(), world.getColumns()));
-        setPreferredSize(new Dimension(
-            world.getMap()[0].length * cellSize,
-            world.getMap().length * cellSize
-        ));
+        setPreferredSize(new Dimension(panelSize, panelSize));
     }
             
     // Repaint method (clear of the map)
@@ -50,10 +53,12 @@ public class matrixView extends JPanel{
         int rows = this.world.getRows();
         int columns = this.world.getColumns();
         
+        // Volvemos a ajustar por si cambia el tamaño de la matriz
+        this.cellSize = Math.min(panelSize / rows, panelSize / columns);
         
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
-                // Colo tile
+                // Color del tile
                 Color color = getColorForValue(this.world.getTile(i,j));
                 g.setColor(color);
                 g.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
@@ -62,9 +67,7 @@ public class matrixView extends JPanel{
                 g.setColor(Color.BLACK);
                 g.drawRect(j * cellSize, i * cellSize, cellSize, cellSize);
             }
-        }
-        
-        
+        }       
     }
 
     private Color getColorForValue(int tile) {
@@ -77,5 +80,4 @@ public class matrixView extends JPanel{
         
         return color;
     }   
-
 }
