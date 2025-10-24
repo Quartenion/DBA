@@ -10,13 +10,14 @@ import javax.swing.*;
 import java.awt.*;
 
 import model.AgentP2;
-import model.AgentModel;
+import model.AgentMemory;
+import model.World;
 
 
 public class mainView extends JFrame{
     
     // Model
-    private AgentModel model;
+    private AgentMemory model;
     
     // View elements
     private matrixView matrixPanel;
@@ -30,7 +31,7 @@ public class mainView extends JFrame{
      * Sets the main configuration of the main JFrame
      * Adds the other views (matrix of the field and the data of the agent)
      */
-    public mainView(AgentModel model){
+    public mainView(AgentMemory model, World world){
         
         // Save the model
         this.model = model;
@@ -40,19 +41,23 @@ public class mainView extends JFrame{
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout()); // Layout to order things
         
-        initComponents();
+        initComponents(world);
         
         
         pack(); // Sets the size needed for the containing elements
         setLocationRelativeTo(null); // Sets the frame in the center of the screen
     }
     
-    private void initComponents() {
+    private void initComponents(World world) {
         // Function to create the initial components
         
-        this.matrixPanel = new matrixView();
+        this.matrixPanel = new matrixView(world);
 
         this.infoPanel = new infoPanelView();
+        
+        // Usamos un split pane o BorderLayout para organizar
+        add(this.matrixPanel, BorderLayout.CENTER);
+        add(this.infoPanel, BorderLayout.EAST);
     }
     
     //---------------Getters and Setters for the controller---------------------

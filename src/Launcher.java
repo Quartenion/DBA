@@ -14,8 +14,8 @@ import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
 import model.AgentP2;
-import model.AgentModel;
-import mundo.mundo;
+import model.AgentMemory;
+import model.World;
 
 
 public class Launcher {
@@ -26,11 +26,10 @@ public class Launcher {
     
     public static void main(String[] args) {
         
-        mundo m = new mundo();
-        String rutaMapa = "./maps/mapWithComplexObstacle1.txt";
-        m.leer_mapa(rutaMapa);
+        
 
-        int[][] mapa = m.getMapa();
+                
+               
         /* De esta forma obtenemos la instancia de ejecucion de jade para 
            para crear nuestros propios contenedores y agentes */
         jade.core.Runtime rt = jade.core.Runtime.instance();
@@ -46,11 +45,21 @@ public class Launcher {
 
         
         java.awt.EventQueue.invokeLater(() -> {
+            
+            // Lectura del mapa
+            World world = new World();
+            
+            String rutaMapa = "./maps/mapWithComplexObstacle1.txt";
+            world.read_map(rutaMapa);
+
+            int[][] mapa = world.getMap();
+            
+                        
             // model
-            AgentModel model = new AgentModel();
+            AgentMemory model = new AgentMemory();
 
             // view
-            mainView view = new mainView(model);
+            mainView view = new mainView(model, world);
 
             // controller
             Controller controller = new Controller(view, model);

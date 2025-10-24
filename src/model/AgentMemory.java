@@ -4,6 +4,6 @@ package model;
  *
  * @author adam
  */
-public class AgentModel {
+public class AgentMemory {
     
 }

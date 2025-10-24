@@ -8,15 +8,15 @@ package controller;
 
 import javax.swing.*;
 import model.AgentP2;
-import model.AgentModel;
+import model.AgentMemory;
 import view.mainView;
 
 public class Controller {
     
     private mainView view;
-    private AgentModel model;
+    private AgentMemory model;
     
-    public Controller(mainView view, AgentModel model){
+    public Controller(mainView view, AgentMemory model){
         this.view = view;
         this.model = model;
         

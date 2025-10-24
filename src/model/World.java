@@ -1,34 +1,34 @@
-package mundo;
+package model;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class mundo {
-    private int[][] mapa; 
+public class World {
+    private int[][] map; 
 
-    public void leer_mapa(String rutaArchivo) {
+    public void read_map(String rutaArchivo) {
     try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
-        int filas = Integer.parseInt(br.readLine().trim());
-        int columnas = Integer.parseInt(br.readLine().trim());
+        int rows = Integer.parseInt(br.readLine().trim());
+        int columns = Integer.parseInt(br.readLine().trim());
 
-        mapa = new int[filas][columnas];
+        map = new int[rows][columns];
 
-        for (int i = 0; i < filas; i++) {
-            String linea = br.readLine();
-            String[] valores = linea.trim().split("\\t");
-            for (int j = 0; j < columnas; j++) {
-                mapa[i][j] = Integer.parseInt(valores[j]);
+        for (int i = 0; i < rows; i++) {
+            String line = br.readLine();
+            String[] value = line.trim().split("\\t");
+            for (int j = 0; j < columns; j++) {
+                map[i][j] = Integer.parseInt(value[j]);
             }
         }
 
     } catch (IOException | NumberFormatException e) {
-        System.out.println("Error al leer el archivo: " + e.getMessage());
+        System.out.println("Error reading the file: " + e.getMessage());
     }
 }
 
 
-    public int[][] getMapa() {
-        return mapa;
+    public int[][] getMap() {
+        return map;
     }
 }
