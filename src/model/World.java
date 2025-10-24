@@ -51,6 +51,10 @@ public class World {
         return map;
     }
     
+    public int getTile(int i, int j) {
+        return this.map[i][j];
+    }
+    
     public void setRows(int rows){
         this.rows = rows;
     }
@@ -59,5 +63,9 @@ public class World {
     }
     public void setMap(int[][] map){
         this.map = map;
+    }
+
+    public boolean empty() {
+        return (this.map == null || this.map.length == 0);
     }
 }

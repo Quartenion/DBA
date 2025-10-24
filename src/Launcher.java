@@ -49,7 +49,7 @@ public class Launcher {
             // Lectura del mapa
             World world = new World();
             
-            String rutaMapa = "./maps/mapWithComplexObstacle1.txt";
+            String rutaMapa = "./maps/mapWithComplexObstacle2.txt";
             world.read_map(rutaMapa);
 
             int[][] mapa = world.getMap();

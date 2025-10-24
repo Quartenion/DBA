@@ -38,6 +38,7 @@ public class mainView extends JFrame {
         setLocationRelativeTo(null);
     }
     
+    // Initial components
     private void initComponents(World world) {
         // Function to create the initial components
         
@@ -47,7 +48,7 @@ public class mainView extends JFrame {
         
         // Usamos un split pane o BorderLayout para organizar
         add(this.matrixPanel, BorderLayout.CENTER);
-        add(this.infoPanel, BorderLayout.EAST);
+        //add(this.infoPanel, BorderLayout.EAST);
     }
 
     // Getter para acceder al panel del mundo
