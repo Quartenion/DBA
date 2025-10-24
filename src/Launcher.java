@@ -26,7 +26,7 @@ public class Launcher {
     public static void main(String[] args) {
 
         /* De esta forma obtenemos la instancia de ejecucion de jade para 
-           para crear nuestros propios contenedores y agentes */
+           crear nuestros propios contenedores y agentes */
         jade.core.Runtime rt = jade.core.Runtime.instance();
 
         // El profile es necesario para crear el contenedor
@@ -38,61 +38,31 @@ public class Launcher {
         ContainerController cc = rt.createMainContainer(p);
 
         // -------------------------
-        // SELECTOR DE MAPAS
-        // -------------------------
-        List<String> mapasDisponibles = obtenerMapas("./maps/");
-
-        if (mapasDisponibles.isEmpty()) {
-            System.out.println("No hay mapas disponibles en la carpeta ./maps/");
-            return;
-        }
-
-        Scanner scanner = new Scanner(System.in);
-        int opcion = -1;
-        while (opcion < 1 || opcion > mapasDisponibles.size()) {
-            System.out.println("¿Qué mapa quieres seleccionar?");
-            for (int i = 0; i < mapasDisponibles.size(); i++) {
-                System.out.println((i + 1) + ". " + mapasDisponibles.get(i));
-            }
-            System.out.print("Introduce el número del mapa: ");
-            if (scanner.hasNextInt()) {
-                opcion = scanner.nextInt();
-            } else {
-                scanner.next(); // limpiar entrada no válida
-                opcion = -1;
-            }
-        }
-
-        String rutaMapa = "./maps/" + mapasDisponibles.get(opcion - 1);
-        System.out.println("Has seleccionado: " + rutaMapa);
-
-        // -------------------------
         // INTERFAZ GRÁFICA
         // -------------------------
         java.awt.EventQueue.invokeLater(() -> {
 
             // Lectura del mapa
             World world = new World();
-            world.read_map(rutaMapa);
+            world.read_map("./maps/mapWithoutObstacle.txt");
 
-            int[][] mapa = world.getMap();
-
-            // model
+            // model para la memoria del agente
             AgentMemory model = new AgentMemory();
 
             // view
             mainView view = new mainView(model, world);
 
             // controller
-            Controller controller = new Controller(view, model);
+            Controller controller = new Controller(view, world);
 
+            // Mostrar ventana
             view.setVisible(true);
 
             // -------------------------
             // LANZAMOS EL AGENTE
             // -------------------------
             try {
-                // Creating the agent controller            
+                // Crear y lanzar el agente
                 AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), null);
                 acHW.start();
 
