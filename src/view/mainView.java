@@ -29,7 +29,7 @@ public class mainView extends JFrame {
         this.model = model;
         
         setTitle("Simulación de Mundo - Agente");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
         
         initComponents(world);
@@ -46,14 +46,7 @@ public class mainView extends JFrame {
 
         this.infoPanel = new infoPanelView();
         
-        // Usamos un split pane o BorderLayout para organizar
         add(this.matrixPanel, BorderLayout.CENTER);
         //add(this.infoPanel, BorderLayout.EAST);
-    }
-
-    // Getter para acceder al panel del mundo
-    public matrixView getMatrixPanel() {
-       
-        return matrixPanel;
     }
 }

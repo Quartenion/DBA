@@ -25,17 +25,6 @@ public class Launcher {
 
     public static void main(String[] args) {
 
-        /* De esta forma obtenemos la instancia de ejecucion de jade para 
-           para crear nuestros propios contenedores y agentes */
-        jade.core.Runtime rt = jade.core.Runtime.instance();
-
-        // El profile es necesario para crear el contenedor
-        Profile p  = new ProfileImpl();
-        p.setParameter(Profile.CONTAINER_NAME, MAIN_CONTAINER);
-        p.setParameter(Profile.MAIN, "true");
-
-        // Creamos el controlador de Main container
-        ContainerController cc = rt.createMainContainer(p);
 
         // -------------------------
         // SELECTOR DE MAPAS
@@ -66,6 +55,7 @@ public class Launcher {
         String rutaMapa = "./maps/" + mapasDisponibles.get(opcion - 1);
         System.out.println("Has seleccionado: " + rutaMapa);
 
+        
         // -------------------------
         // INTERFAZ GRÁFICA
         // -------------------------
@@ -75,7 +65,6 @@ public class Launcher {
             World world = new World();
             world.read_map(rutaMapa);
 
-            int[][] mapa = world.getMap();
 
             // model
             AgentMemory model = new AgentMemory();
@@ -83,14 +72,25 @@ public class Launcher {
             // view
             mainView view = new mainView(model, world);
 
-            // controller
-            Controller controller = new Controller(view, model);
 
-            view.setVisible(true);
-
+            
+            
             // -------------------------
             // LANZAMOS EL AGENTE
             // -------------------------
+            
+            /* De esta forma obtenemos la instancia de ejecucion de jade para 
+            para crear nuestros propios contenedores y agentes */
+            jade.core.Runtime rt = jade.core.Runtime.instance();
+
+            // El profile es necesario para crear el contenedor
+            Profile p  = new ProfileImpl();
+            p.setParameter(Profile.CONTAINER_NAME, MAIN_CONTAINER);
+            p.setParameter(Profile.MAIN, "true");
+
+            // Creamos el controlador de Main container
+            ContainerController cc = rt.createMainContainer(p);
+
             try {
                 // Creating the agent controller            
                 AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), null);
@@ -100,6 +100,13 @@ public class Launcher {
                 System.getLogger(Launcher.class.getName()).log(System.Logger.Level.ERROR,
                         (String) null, ex);
             }
+            
+            
+            // controller
+            Controller controller = new Controller(view, model, cc);
+
+            view.setVisible(true);
+            
         });
     }
 

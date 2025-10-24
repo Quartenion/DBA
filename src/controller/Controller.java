@@ -6,6 +6,8 @@ package controller;
  */
 
 
+import jade.wrapper.ContainerController;
+import jade.wrapper.ControllerException;
 import javax.swing.*;
 import model.AgentP2;
 import model.AgentMemory;
@@ -15,10 +17,12 @@ public class Controller {
     
     private mainView view;
     private AgentMemory model;
+    private ContainerController cc;
     
-    public Controller(mainView view, AgentMemory model){
+    public Controller(mainView view, AgentMemory model, ContainerController cc){
         this.view = view;
         this.model = model;
+        this.cc = cc;
         
         createEventListeners();
         
@@ -41,5 +45,21 @@ public class Controller {
     // Functions to control the app
     private void createEventListeners(){
         
+        view.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                // 1. Close JADE
+                try {
+                    if (cc != null) {
+                        cc.kill(); // Kill the container and everything
+                    }
+                } catch (ControllerException ex) {
+                    ex.printStackTrace();
+                }
+
+                // 2. Close APP
+                System.exit(0); 
+            }
+        });
     }
 }
