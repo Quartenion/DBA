@@ -4,6 +4,7 @@
  */
 
 import view.mainView;
+import view.MapSelectorDialog;
 import controller.Controller;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
@@ -14,10 +15,7 @@ import model.AgentP2;
 import model.AgentMemory;
 import model.World;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class Launcher {
 
@@ -25,10 +23,7 @@ public class Launcher {
 
     public static void main(String[] args) {
 
-
-        // -------------------------
-        // SELECTOR DE MAPAS
-        // -------------------------
+        // Listamos mapas en ./maps/
         List<String> mapasDisponibles = obtenerMapas("./maps/");
 
         if (mapasDisponibles.isEmpty()) {
@@ -36,26 +31,19 @@ public class Launcher {
             return;
         }
 
-        Scanner scanner = new Scanner(System.in);
-        int opcion = -1;
-        while (opcion < 1 || opcion > mapasDisponibles.size()) {
-            System.out.println("¿Qué mapa quieres seleccionar?");
-            for (int i = 0; i < mapasDisponibles.size(); i++) {
-                System.out.println((i + 1) + ". " + mapasDisponibles.get(i));
-            }
-            System.out.print("Introduce el número del mapa: ");
-            if (scanner.hasNextInt()) {
-                opcion = scanner.nextInt();
-            } else {
-                scanner.next(); // limpiar entrada no válida
-                opcion = -1;
-            }
+        // Mostramos diálogo modal para seleccionar mapa (bloqueante)
+        MapSelectorDialog selector = new MapSelectorDialog(null, mapasDisponibles);
+        String seleccionado = selector.getSelectedMap(); // Devuelve nombre de fichero o null si cancelado
+
+        if (seleccionado == null) {
+            // Usuario canceló o no seleccionó nada -> salimos
+            System.out.println("Selección de mapa cancelada. Saliendo.");
+            return;
         }
 
-        String rutaMapa = "./maps/" + mapasDisponibles.get(opcion - 1);
+        String rutaMapa = "./maps/" + seleccionado;
         System.out.println("Has seleccionado: " + rutaMapa);
 
-        
         // -------------------------
         // INTERFAZ GRÁFICA
         // -------------------------
@@ -65,6 +53,14 @@ public class Launcher {
             World world = new World();
             world.read_map(rutaMapa);
 
+            // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.
+            if (world.empty()) {
+                javax.swing.JOptionPane.showMessageDialog(null,
+                        "Error al cargar el mapa seleccionado: " + rutaMapa,
+                        "Error de carga",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             // model
             AgentMemory model = new AgentMemory();
@@ -72,13 +68,9 @@ public class Launcher {
             // view
             mainView view = new mainView(model, world);
 
-
-            
-            
             // -------------------------
             // LANZAMOS EL AGENTE
             // -------------------------
-            
             /* De esta forma obtenemos la instancia de ejecucion de jade para 
             para crear nuestros propios contenedores y agentes */
             jade.core.Runtime rt = jade.core.Runtime.instance();
@@ -100,13 +92,12 @@ public class Launcher {
                 System.getLogger(Launcher.class.getName()).log(System.Logger.Level.ERROR,
                         (String) null, ex);
             }
-            
-            
+
             // controller
             Controller controller = new Controller(view, model, cc);
 
             view.setVisible(true);
-            
+
         });
     }
 
@@ -114,10 +105,10 @@ public class Launcher {
      * Método para listar los archivos de mapas en la carpeta especificada
      */
     private static List<String> obtenerMapas(String carpeta) {
-        File dir = new File(carpeta);
-        List<String> mapas = new ArrayList<>();
+        java.io.File dir = new java.io.File(carpeta);
+        java.util.List<String> mapas = new java.util.ArrayList<>();
         if (dir.exists() && dir.isDirectory()) {
-            for (File f : dir.listFiles()) {
+            for (java.io.File f : dir.listFiles()) {
                 if (f.isFile() && f.getName().endsWith(".txt")) {
                     mapas.add(f.getName());
                 }
