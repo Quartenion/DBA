@@ -2,16 +2,16 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
-import model.AgentMemory;
+import model.Environment;
 import model.World;
 
 public class mainView extends JFrame {
     
-    private AgentMemory model;
+    private Environment model;
     private matrixView matrixPanel;
     private infoPanelView infoPanel;
     
-    public mainView(AgentMemory model, World world) {
+    public mainView(Environment model, World world) {
         this.model = model;
         setTitle("Simulación de Mundo - Agente");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -23,11 +23,15 @@ public class mainView extends JFrame {
     }
     
     private void initComponents(World world) {
-        this.matrixPanel = new matrixView(world);
+        this.matrixPanel = new matrixView(world, this.model);
         this.infoPanel = new infoPanelView();
 
         add(this.matrixPanel, BorderLayout.CENTER);
         add(this.infoPanel, BorderLayout.EAST);
+    }
+    
+    public void initMatrix(){
+        this.matrixPanel.initMatrix();
     }
 
     public matrixView getMatrixPanel() {

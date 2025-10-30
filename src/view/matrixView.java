@@ -3,11 +3,13 @@ package view;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.JPanel;
+import model.Environment;
 import model.World;
 
 public class matrixView extends JPanel {
     
     private World world;
+    private Environment model;
     private int panelSize = 800;
     private int cellSize;
 
@@ -25,11 +27,10 @@ public class matrixView extends JPanel {
     private Runnable positionChangedListener; // para repaint/log
     private java.util.function.Consumer<String> logListener;
 
-    public matrixView(World world) {
+    public matrixView(World world, Environment model) {
         this.world = world;
+        this.model = model;
         syncFloatPositions(); // inicializa desde el modelo
-
-        this.cellSize = Math.min(panelSize / world.getRows(), panelSize / world.getColumns());
         setPreferredSize(new Dimension(panelSize, panelSize));
 
         addMouseListener(new MouseAdapter() {
@@ -114,6 +115,12 @@ public class matrixView extends JPanel {
             }
         });
     }
+    
+    public void initMatrix(){
+        syncFloatPositions();
+        this.cellSize = Math.min(panelSize / world.getRows(), panelSize / world.getCols());
+        repaint();
+    }
 
     // Sincroniza las posiciones flotantes con el modelo
     public void syncWithModel() {
@@ -123,13 +130,14 @@ public class matrixView extends JPanel {
     }
 
     private void syncFloatPositions() {
-        this.agentFloatX = world.getAgentX();
-        this.agentFloatY = world.getAgentY();
-        this.goalFloatX = world.getGoalX();
-        this.goalFloatY = world.getGoalY();
+        this.agentFloatX = model.getAgentX();
+        this.agentFloatY = model.getAgentY();
+        this.goalFloatX = model.getGoalX();
+        this.goalFloatY = model.getGoalY();
     }
 
     // Setters para listeners
+    
     public void setAgentPositionListener(java.util.function.BiConsumer<Integer, Integer> listener) {
         this.agentPositionListener = listener;
     }
@@ -156,7 +164,7 @@ public class matrixView extends JPanel {
         if (world.empty()) return;
 
         int rows = world.getRows();
-        int cols = world.getColumns();
+        int cols = world.getCols();
         this.cellSize = Math.min(panelSize / rows, panelSize / cols);
 
         // Dibujar el mapa

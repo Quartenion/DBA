@@ -6,7 +6,7 @@ import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 
 public class AgentP2 extends Agent {
-    private AgentMemory model;
+    private Environment model;
     private final int ACTION_TIME = 2000;
     
     @Override

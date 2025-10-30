@@ -4,7 +4,6 @@
  */
 
 import view.mainView;
-import view.MapSelectorDialog;
 import controller.Controller;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
@@ -12,7 +11,7 @@ import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
 import model.AgentP2;
-import model.AgentMemory;
+import model.Environment;
 import model.World;
 
 import java.util.List;
@@ -22,30 +21,9 @@ public class Launcher {
     private static final String MAIN_CONTAINER = "dba_main";
 
     public static void main(String[] args) {
-        // -------------------------
-        // INTERFAZ GRÁFICA
-        // -------------------------
+        
+        
         java.awt.EventQueue.invokeLater(() -> {
-
-            // Lectura del mapa
-            World world = new World();
-            world.read_map("./maps/mapWithoutObstacle.txt");
-
-            // model para la memoria del agente
-            // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.
-            if (world.empty()) {
-                javax.swing.JOptionPane.showMessageDialog(null,
-                        "Error al cargar el mapa inicial",
-                        "Error de carga",
-                        javax.swing.JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // model
-            AgentMemory model = new AgentMemory();
-
-            // view
-            mainView view = new mainView(model, world);
 
             // -------------------------
             // LANZAMOS EL AGENTE
@@ -72,9 +50,30 @@ public class Launcher {
                         (String) null, ex);
             }
 
+            // Create an empty world
+            World world = new World();
+            
+            // Create the agent model
+            Environment model = new Environment(world);
+            
+            // view
+            mainView view = new mainView(model, world);
+            
             // controller
             Controller controller = new Controller(view, world, model, cc);
+            
+            controller.read_map("./maps/mapWithoutObstacle.txt");
+            
 
+            // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.
+            if (world.empty()) {
+                javax.swing.JOptionPane.showMessageDialog(null,
+                        "Error al cargar el mapa inicial",
+                        "Error de carga",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
             view.setVisible(true);
 
         });
