@@ -11,6 +11,7 @@ import jade.wrapper.ControllerException;
 import javax.swing.*;
 import java.io.File;
 import java.awt.event.ActionListener;
+import model.AgentMemory;
 import model.World;
 import view.mainView;
 
@@ -29,6 +30,7 @@ public class Controller {
         this.modelWorld = modelWorld;
         this.cc = cc;
         
+        createEventListeners();
         setupViewListeners();
         initializeMapSelector();
         initializeViewToggles();
@@ -40,26 +42,27 @@ public class Controller {
     private void setupViewListeners() {
         // Escuchar intentos de cambio de posición del agente
         view.getMatrixPanel().setAgentPositionListener((row, col) -> {
-            model.setAgentPosition(row, col);
+            this.modelWorld.setAgentPosition(row, col);
             syncViewWithModel();
         });
 
         // Escuchar intentos de cambio de posición del objetivo
         view.getMatrixPanel().setGoalPositionListener((row, col) -> {
-            model.setGoalPosition(row, col);
+            this.modelWorld.setGoalPosition(row, col);
             syncViewWithModel();
         });
 
         // Listener para actualizar log y panel de info cuando cambia la posición
         view.getMatrixPanel().setPositionChangedListener(() -> {
-            view.getInfoPanel().setAgentPosition(model.getAgentX(), model.getAgentY());
-            view.getInfoPanel().setGoalPosition(model.getGoalX(), model.getGoalY());
-            view.getInfoPanel().setGoalReached(model.isGoalReached());
+            view.getInfoPanel().setAgentPosition(this.modelWorld.getAgentX(), this.modelWorld.getAgentY());
+            view.getInfoPanel().setGoalPosition(this.modelWorld.getGoalX(), this.modelWorld.getGoalY());
+            view.getInfoPanel().setGoalReached(this.modelWorld.isGoalReached());
             view.getInfoPanel().addLogEntry(
-                "Agente: (" + model.getAgentX() + "," + model.getAgentY() + 
-                ") | Objetivo: (" + model.getGoalX() + "," + model.getGoalY() + ")"
+                "Agente: (" + this.modelWorld.getAgentX() + "," + this.modelWorld.getAgentY() + 
+                ") | Objetivo: (" + this.modelWorld.getGoalX() + "," + this.modelWorld.getGoalY() + ")"
             );
-            
+        });
+    }
     // Functions to control the app
     private void createEventListeners(){
         
@@ -105,7 +108,7 @@ public class Controller {
 
     private void loadMap(String mapName) {
         try {
-            model.read_map(mapsDir + mapName);
+            this.modelWorld.read_map(mapsDir + mapName);
             syncViewWithModel();
             view.getInfoPanel().setActionsCount(0);
             // El log se añade dentro de syncViewWithModel() vía positionChangedListener

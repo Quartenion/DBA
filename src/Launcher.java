@@ -35,7 +35,7 @@ public class Launcher {
             // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.
             if (world.empty()) {
                 javax.swing.JOptionPane.showMessageDialog(null,
-                        "Error al cargar el mapa seleccionado: " + rutaMapa,
+                        "Error al cargar el mapa inicial",
                         "Error de carga",
                         javax.swing.JOptionPane.ERROR_MESSAGE);
                 return;
