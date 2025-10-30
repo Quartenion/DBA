@@ -36,3 +36,5 @@ Thumbs.db
 
 # Archivos de configuración local (opcional, pero común)
 !.gitignore
+APDescription.txt
+MTPs-dba_main.txt

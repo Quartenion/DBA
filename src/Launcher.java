@@ -22,28 +22,6 @@ public class Launcher {
     private static final String MAIN_CONTAINER = "dba_main";
 
     public static void main(String[] args) {
-
-        // Listamos mapas en ./maps/
-        List<String> mapasDisponibles = obtenerMapas("./maps/");
-
-        if (mapasDisponibles.isEmpty()) {
-            System.out.println("No hay mapas disponibles en la carpeta ./maps/");
-            return;
-        }
-
-        // Mostramos diálogo modal para seleccionar mapa (bloqueante)
-        MapSelectorDialog selector = new MapSelectorDialog(null, mapasDisponibles);
-        String seleccionado = selector.getSelectedMap(); // Devuelve nombre de fichero o null si cancelado
-
-        if (seleccionado == null) {
-            // Usuario canceló o no seleccionó nada -> salimos
-            System.out.println("Selección de mapa cancelada. Saliendo.");
-            return;
-        }
-
-        String rutaMapa = "./maps/" + seleccionado;
-        System.out.println("Has seleccionado: " + rutaMapa);
-
         // -------------------------
         // INTERFAZ GRÁFICA
         // -------------------------
@@ -51,8 +29,9 @@ public class Launcher {
 
             // Lectura del mapa
             World world = new World();
-            world.read_map(rutaMapa);
+            world.read_map("./maps/mapWithoutObstacle.txt");
 
+            // model para la memoria del agente
             // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.
             if (world.empty()) {
                 javax.swing.JOptionPane.showMessageDialog(null,
@@ -84,7 +63,7 @@ public class Launcher {
             ContainerController cc = rt.createMainContainer(p);
 
             try {
-                // Creating the agent controller            
+                // Crear y lanzar el agente
                 AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), null);
                 acHW.start();
 
@@ -94,7 +73,7 @@ public class Launcher {
             }
 
             // controller
-            Controller controller = new Controller(view, model, cc);
+            Controller controller = new Controller(view, world, model, cc);
 
             view.setVisible(true);
 
