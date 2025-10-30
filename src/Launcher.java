@@ -4,6 +4,7 @@
  */
 
 import view.mainView;
+import view.MapSelectorDialog;
 import controller.Controller;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
@@ -14,29 +15,13 @@ import model.AgentP2;
 import model.AgentMemory;
 import model.World;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class Launcher {
 
     private static final String MAIN_CONTAINER = "dba_main";
 
     public static void main(String[] args) {
-
-        /* De esta forma obtenemos la instancia de ejecucion de jade para 
-           crear nuestros propios contenedores y agentes */
-        jade.core.Runtime rt = jade.core.Runtime.instance();
-
-        // El profile es necesario para crear el contenedor
-        Profile p  = new ProfileImpl();
-        p.setParameter(Profile.CONTAINER_NAME, MAIN_CONTAINER);
-        p.setParameter(Profile.MAIN, "true");
-
-        // Creamos el controlador de Main container
-        ContainerController cc = rt.createMainContainer(p);
-
         // -------------------------
         // INTERFAZ GRÁFICA
         // -------------------------
@@ -47,20 +32,36 @@ public class Launcher {
             world.read_map("./maps/mapWithoutObstacle.txt");
 
             // model para la memoria del agente
+            // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.
+            if (world.empty()) {
+                javax.swing.JOptionPane.showMessageDialog(null,
+                        "Error al cargar el mapa seleccionado: " + rutaMapa,
+                        "Error de carga",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // model
             AgentMemory model = new AgentMemory();
 
             // view
             mainView view = new mainView(model, world);
 
-            // controller
-            Controller controller = new Controller(view, world);
-
-            // Mostrar ventana
-            view.setVisible(true);
-
             // -------------------------
             // LANZAMOS EL AGENTE
             // -------------------------
+            /* De esta forma obtenemos la instancia de ejecucion de jade para 
+            para crear nuestros propios contenedores y agentes */
+            jade.core.Runtime rt = jade.core.Runtime.instance();
+
+            // El profile es necesario para crear el contenedor
+            Profile p  = new ProfileImpl();
+            p.setParameter(Profile.CONTAINER_NAME, MAIN_CONTAINER);
+            p.setParameter(Profile.MAIN, "true");
+
+            // Creamos el controlador de Main container
+            ContainerController cc = rt.createMainContainer(p);
+
             try {
                 // Crear y lanzar el agente
                 AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), null);
@@ -70,6 +71,12 @@ public class Launcher {
                 System.getLogger(Launcher.class.getName()).log(System.Logger.Level.ERROR,
                         (String) null, ex);
             }
+
+            // controller
+            Controller controller = new Controller(view, world, model, cc);
+
+            view.setVisible(true);
+
         });
     }
 
@@ -77,10 +84,10 @@ public class Launcher {
      * Método para listar los archivos de mapas en la carpeta especificada
      */
     private static List<String> obtenerMapas(String carpeta) {
-        File dir = new File(carpeta);
-        List<String> mapas = new ArrayList<>();
+        java.io.File dir = new java.io.File(carpeta);
+        java.util.List<String> mapas = new java.util.ArrayList<>();
         if (dir.exists() && dir.isDirectory()) {
-            for (File f : dir.listFiles()) {
+            for (java.io.File f : dir.listFiles()) {
                 if (f.isFile() && f.getName().endsWith(".txt")) {
                     mapas.add(f.getName());
                 }

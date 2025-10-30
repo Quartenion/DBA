@@ -14,7 +14,7 @@ public class mainView extends JFrame {
     public mainView(AgentMemory model, World world) {
         this.model = model;
         setTitle("Simulación de Mundo - Agente");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
         
         initComponents(world);

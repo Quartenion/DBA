@@ -1,5 +1,13 @@
 package controller;
 
+/**
+ *
+ * @author Group_7_DBA
+ */
+
+
+import jade.wrapper.ContainerController;
+import jade.wrapper.ControllerException;
 import javax.swing.*;
 import java.io.File;
 import java.awt.event.ActionListener;
@@ -9,12 +17,17 @@ import view.mainView;
 public class Controller {
     
     private mainView view;
-    private World model;
+    private World modelWorld;
     private final String mapsDir = "./maps/";
     
-    public Controller(mainView view, World model) {
+    private AgentMemory model;
+    private ContainerController cc;
+    
+    public Controller(mainView view, World modelWorld, AgentMemory model, ContainerController cc){
         this.view = view;
         this.model = model;
+        this.modelWorld = modelWorld;
+        this.cc = cc;
         
         setupViewListeners();
         initializeMapSelector();
@@ -46,6 +59,25 @@ public class Controller {
                 "Agente: (" + model.getAgentX() + "," + model.getAgentY() + 
                 ") | Objetivo: (" + model.getGoalX() + "," + model.getGoalY() + ")"
             );
+            
+    // Functions to control the app
+    private void createEventListeners(){
+        
+        view.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                // 1. Close JADE
+                try {
+                    if (cc != null) {
+                        cc.kill(); // Kill the container and everything
+                    }
+                } catch (ControllerException ex) {
+                    ex.printStackTrace();
+                }
+
+                // 2. Close APP
+                System.exit(0); 
+            }
         });
     }
     
