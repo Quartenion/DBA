@@ -63,6 +63,15 @@ public class Controller {
                 ") | Objetivo: (" + this.model.getGoalX() + "," + this.model.getGoalY() + ")"
             );
         });
+
+        // ============================================
+        // TIMER PARA ACTUALIZAR LA VISTA AUTOMÁTICAMENTE
+        // ============================================
+        javax.swing.Timer timer = new javax.swing.Timer(500, e -> {
+            syncViewWithModel();
+            view.getInfoPanel().setActionsCount(this.model.getEnergyUsed());
+        });
+        timer.start();
     }
     // Functions to control the app
     private void createEventListeners(){
