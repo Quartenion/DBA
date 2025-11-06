@@ -24,6 +24,15 @@ public class Launcher {
         
         
         java.awt.EventQueue.invokeLater(() -> {
+            
+            // -------------------------
+            // LANZAMOS EL MUNDO
+            // -------------------------
+            // Create an empty world
+            World world = new World();
+            
+            // Create the agent model
+            Environment model = new Environment(world);
 
             // -------------------------
             // LANZAMOS EL AGENTE
@@ -42,7 +51,8 @@ public class Launcher {
 
             try {
                 // Crear y lanzar el agente
-                AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), null);
+                AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), 
+                                        new Object[]{model});
                 acHW.start();
 
             } catch (StaleProxyException ex) {
@@ -50,11 +60,6 @@ public class Launcher {
                         (String) null, ex);
             }
 
-            // Create an empty world
-            World world = new World();
-            
-            // Create the agent model
-            Environment model = new Environment(world);
             
             // view
             mainView view = new mainView(model, world);

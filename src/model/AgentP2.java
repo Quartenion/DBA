@@ -2,7 +2,6 @@
 package model;
 
 import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 
 public class AgentP2 extends Agent {
@@ -11,6 +10,14 @@ public class AgentP2 extends Agent {
     
     @Override
     protected void setup(){
+        Object[] args = getArguments();
+        
+        if (args != null && args.length > 0 && args[0] instanceof Environment) {
+            this.model = (Environment) args[0];
+        } else {
+            // Manejo de error (opcional)
+            throw new RuntimeException("TextEditor no proporcionado al agente");
+        }
         
         // Add the behaviours
         addBehaviour(new SeeBehaviour(this, ACTION_TIME));
