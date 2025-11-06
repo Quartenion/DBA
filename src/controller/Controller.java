@@ -143,6 +143,12 @@ public class Controller {
     private void loadMap(String mapName) {
         try {
             read_map(mapsDir + mapName);
+
+            // Limpiar memoria y energía al cargar nuevo mapa
+            this.model.clearMemory();
+            this.model.resetEnergy();
+            this.model.resetEnergy();
+
             syncViewWithModel();
             view.getInfoPanel().setActionsCount(0);
             // El log se añade dentro de syncViewWithModel() vía positionChangedListener

@@ -25,6 +25,9 @@ public class mainView extends JFrame {
     private void initComponents(World world) {
         this.matrixPanel = new matrixView(world, this.model);
         this.infoPanel = new infoPanelView();
+        
+        // Conectar matrixPanel con infoPanel
+        this.matrixPanel.setInfoPanel(this.infoPanel);
 
         add(this.matrixPanel, BorderLayout.CENTER);
         add(this.infoPanel, BorderLayout.EAST);

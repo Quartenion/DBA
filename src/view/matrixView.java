@@ -5,6 +5,7 @@ import java.awt.event.*;
 import javax.swing.JPanel;
 import model.Environment;
 import model.World;
+import java.util.Set;
 
 public class matrixView extends JPanel {
     
@@ -20,7 +21,10 @@ public class matrixView extends JPanel {
     private boolean isRunning = false;
     private boolean draggingAgent = false;
     private boolean draggingGoal = false;
-
+    
+    // Referencia a infoPanelView para leer estado de toggles
+    private infoPanelView infoPanel;
+    
     // Listeners: notifican coordenadas propuestas
     private java.util.function.BiConsumer<Integer, Integer> agentPositionListener;
     private java.util.function.BiConsumer<Integer, Integer> goalPositionListener;
@@ -30,7 +34,7 @@ public class matrixView extends JPanel {
     public matrixView(World world, Environment model) {
         this.world = world;
         this.model = model;
-        syncFloatPositions(); // inicializa desde el modelo
+        syncFloatPositions();
         setPreferredSize(new Dimension(panelSize, panelSize));
 
         addMouseListener(new MouseAdapter() {
@@ -122,7 +126,6 @@ public class matrixView extends JPanel {
         repaint();
     }
 
-    // Sincroniza las posiciones flotantes con el modelo
     public void syncWithModel() {
         syncFloatPositions();
         if (positionChangedListener != null) positionChangedListener.run();
@@ -157,6 +160,11 @@ public class matrixView extends JPanel {
     public void setRunning(boolean running) {
         this.isRunning = running;
     }
+    
+    // Método para conectar con el infoPanel
+    public void setInfoPanel(infoPanelView infoPanel) {
+        this.infoPanel = infoPanel;
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -166,15 +174,40 @@ public class matrixView extends JPanel {
         int rows = world.getRows();
         int cols = world.getCols();
         this.cellSize = Math.min(panelSize / rows, panelSize / cols);
+        
+        // Obtener memoria del modelo
+        Set<String> visitedCells = model.getVisitedCells();
+        Set<String> seenCells = model.getSeenCells();
+        
+        // Comprobar estado de los toggles
+        boolean showVisited = infoPanel != null && infoPanel.isShowVisitedSelected();
+        boolean showMemory = infoPanel != null && infoPanel.isShowMemorySelected();
 
         // Dibujar el mapa
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                Color color = switch(world.getTile(i, j)) {
-                    case 0 -> Color.WHITE;
-                    case -1 -> Color.BLACK;
-                    default -> Color.LIGHT_GRAY;
-                };
+                String cellKey = i + "," + j;
+                Color color;
+                
+                // Prioridad de colores:
+                // 1. Obstáculos (negro)
+                // 2. Visitadas (amarillo claro) - si el toggle está activo
+                // 3. Vistas (azul muy claro) - si el toggle está activo
+                // 4. No exploradas (blanco)
+                
+                if (world.getTile(i, j) == -1) {
+                    color = Color.BLACK;
+                } else if (showVisited && visitedCells.contains(cellKey)) {
+                    // Amarillo claro para celdas visitadas
+                    color = new Color(255, 255, 150);
+                } else if (showMemory && seenCells.contains(cellKey)) {
+                    // Azul muy claro para celdas vistas
+                    color = new Color(200, 220, 255);
+                } else {
+                    // Blanco para celdas no exploradas
+                    color = Color.WHITE;
+                }
+                
                 g.setColor(color);
                 g.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
                 g.setColor(Color.BLACK);
