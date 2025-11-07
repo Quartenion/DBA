@@ -6,67 +6,67 @@ package controller;
  */
 
 
+import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.ControllerException;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import model.Environment;
 import model.World;
-import view.mainView;
+import view.MainView;
 
 public class Controller {
     
-    private mainView view;
+    private MainView view;
     private World modelWorld;
     private final String mapsDir = "./maps/";
     
     private Environment model;
     private ContainerController cc;
+    private AgentController acHW;
     
-    public Controller(mainView view, World modelWorld, Environment model, ContainerController cc){
+    private boolean isRunning = false;
+    private boolean draggingAgent = false;
+    private boolean draggingGoal = false;
+
+    // Listeners: notifican coordenadas propuestas
+    private java.util.function.BiConsumer<Integer, Integer> agentPositionListener;
+    private java.util.function.BiConsumer<Integer, Integer> goalPositionListener;
+    
+    /**
+     * @param view Vista principal, que luego encapsula las otras vistas
+     * @param modelWorld Modelo del mundo fisico
+     * @param model Modelo del entorno del agente
+     * @param cc Modelo del contenedor del agente (Para luego parar la ejecucion)
+     * @param acHW Controlador del agente
+     */
+    public Controller(MainView view, World modelWorld, Environment model, 
+                            ContainerController cc, AgentController acHW){
+        
         this.view = view;
         this.model = model;
         this.modelWorld = modelWorld;
         this.cc = cc;
+        this.acHW = acHW;
         
         createEventListeners();
-        setupViewListeners();
         initializeMapSelector();
         initializeViewToggles();
+        syncFloatPositions();
         
-        // Sincronizar vista con modelo inicial
-        syncViewWithModel();
     }
+
     
-    private void setupViewListeners() {
-        // Escuchar intentos de cambio de posición del agente
-        view.getMatrixPanel().setAgentPositionListener((row, col) -> {
-            this.model.setAgentPosition(row, col);
-            syncViewWithModel();
-        });
-
-        // Escuchar intentos de cambio de posición del objetivo
-        view.getMatrixPanel().setGoalPositionListener((row, col) -> {
-            this.model.setGoalPosition(row, col);
-            syncViewWithModel();
-        });
-
-        // Listener para actualizar log y panel de info cuando cambia la posición
-        view.getMatrixPanel().setPositionChangedListener(() -> {
-            view.getInfoPanel().setAgentPosition(this.model.getAgentX(), this.model.getAgentY());
-            view.getInfoPanel().setGoalPosition(this.model.getGoalX(), this.model.getGoalY());
-            view.getInfoPanel().setGoalReached(this.model.isGoalReached());
-            view.getInfoPanel().addLogEntry(
-                "Agente: (" + this.model.getAgentX() + "," + this.model.getAgentY() + 
-                ") | Objetivo: (" + this.model.getGoalX() + "," + this.model.getGoalY() + ")"
-            );
-        });
-    }
-    // Functions to control the app
+    // TODOS LOS LISTENERS DE LA APP
     private void createEventListeners(){
         
+        // Listener para cerrar la aplicacion y parar la ejecucion de jade
         view.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
@@ -83,8 +83,97 @@ public class Controller {
                 System.exit(0); 
             }
         });
+        
+        // Listener para el click del raton
+        view.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (isRunning) return;
+                int mouseX = e.getX(), mouseY = e.getY();
+                int margin = view.getCellSize() / 4;
+                int radius = (view.getCellSize() - margin) / 2;
+
+                int agentCenterX = (int)(view.getAgentDoubleY() * view.getCellSize() + view.getCellSize()/2);
+                int agentCenterY = (int)(view.getAgentDoubleX() * view.getCellSize() + view.getCellSize()/2);
+                if ((mouseX - agentCenterX)*(mouseX - agentCenterX) + 
+                    (mouseY - agentCenterY)*(mouseY - agentCenterY) <= radius*radius) {
+                    draggingAgent = true;
+                    return;
+                }
+
+                int goalCenterX = (int)(view.getGoalDoubleY() * view.getCellSize() + view.getCellSize()/2);
+                int goalCenterY = (int)(view.getGoalDoubleX() * view.getCellSize() + view.getCellSize()/2);
+                if ((mouseX - goalCenterX)*(mouseX - goalCenterX) + 
+                    (mouseY - goalCenterY)*(mouseY - goalCenterY) <= radius*radius) {
+                    draggingGoal = true;
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (draggingAgent) {
+                    int col = (int)(view.getAgentDoubleY() + 0.5);
+                    int row = (int)(view.getAgentDoubleX() + 0.5);
+                    if (agentPositionListener != null) {
+                        agentPositionListener.accept(row, col);
+                    }
+                } else if (draggingGoal) {
+                    int col = (int)(view.getGoalDoubleY() + 0.5);
+                    int row = (int)(view.getGoalDoubleX() + 0.5);
+                    if (goalPositionListener != null) {
+                        goalPositionListener.accept(row, col);
+                    }
+                }
+                draggingAgent = false;
+                draggingGoal = false;
+                view.setCursor(Cursor.getDefaultCursor());
+                view.repaint();
+            }
+        });
+
+        // Listener para el arrastre del raton
+        view.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (draggingAgent) {
+                    view.setAgentDoublePos((double)e.getX() / view.getCellSize() - 0.5,
+                                          (double)e.getY() / view.getCellSize() - 0.5);
+                    view.repaint();
+                } else if (draggingGoal) {
+                    view.setGoalDoublePos((double)e.getX() / view.getCellSize() - 0.5,
+                                          (double)e.getY() / view.getCellSize() - 0.5);
+                    view.repaint();
+                }
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                if (isRunning) return;
+                int mouseX = e.getX(), mouseY = e.getY();
+                int margin = view.getCellSize() / 4;
+                int radius = (view.getCellSize() - margin) / 2;
+
+                int agentCenterX = (int)(view.getAgentDoubleY() * view.getCellSize() + view.getCellSize()/2);
+                int agentCenterY = (int)(view.getAgentDoubleX() * view.getCellSize() + view.getCellSize()/2);
+                int goalCenterX = (int)(view.getGoalDoubleY() * view.getCellSize() + view.getCellSize()/2);
+                int goalCenterY = (int)(view.getGoalDoubleX() * view.getCellSize() + view.getCellSize()/2);
+
+                boolean overAgent = (mouseX - agentCenterX)*(mouseX - agentCenterX) + 
+                                    (mouseY - agentCenterY)*(mouseY - agentCenterY) <= radius*radius;
+                boolean overGoal = (mouseX - goalCenterX)*(mouseX - goalCenterX) + 
+                                   (mouseY - goalCenterY)*(mouseY - goalCenterY) <= radius*radius;
+
+                view.setCursor(overAgent || overGoal ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) 
+                                                : Cursor.getDefaultCursor());
+                view.repaint();
+            }
+        });
     }
     
+    
+    
+    
+    // FUNCIONES DE CREACION Y DESTRUCCION DE LOS MAPAS
     private void initializeMapSelector() {
         File dir = new File(mapsDir);
         if (dir.exists() && dir.isDirectory()) {
@@ -131,6 +220,9 @@ public class Controller {
         }
     }
 
+    
+    
+    // Cargar el mapa a partir de una archivo CORREGIR
     private void loadMap(String mapName) {
         try {
             read_map(mapsDir + mapName);
@@ -145,8 +237,42 @@ public class Controller {
     
     
 
+
+    
+    // SYNCS
+    // Sincroniza la posicion para mover el agente
+    private void syncFloatPositions() {
+        this.view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
+        this.view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
+    }
+    
     // Sincroniza toda la vista con el modelo
     private void syncViewWithModel() {
-        view.getMatrixPanel().syncWithModel(); // Esto dispara positionChangedListener
+        // view.getMatrixPanel().syncWithModel(); // Esto dispara positionChangedListener
     }
+    
+    // Sincroniza las posiciones flotantes con el modelo
+    public void syncWithModel() {
+        //if (positionChangedListener != null) 
+            //positionChangedListener.run();
+        //repaint();
+    }
+
+
+    
+    // GETTERS
+    public int getAgentX(){
+        return model.getAgentX();
+    }
+    public int getAgentY(){
+        return model.getAgentY();
+    }
+    public int getGoalX(){
+        return model.getGoalX();
+    }
+    public int getGoalY(){
+        return model.getGoalY();
+    }
+    
+    
 }

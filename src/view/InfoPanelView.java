@@ -15,7 +15,7 @@ import java.awt.event.ActionListener;
  * - Toggle buttons para mostrar diferentes vistas
  * - Log de últimas 5 acciones
  */
-public class infoPanelView extends JPanel {
+public class InfoPanelView extends JPanel {
 
     // Labels
     private JLabel actionsLabel;
@@ -34,7 +34,7 @@ public class infoPanelView extends JPanel {
     private DefaultListModel<String> logModel;
     private JList<String> logList;
 
-    public infoPanelView() {
+    public InfoPanelView() {
         setLayout(new GridBagLayout());
         setPreferredSize(new Dimension(300, 600));
         setBackground(new Color(245, 245, 245));

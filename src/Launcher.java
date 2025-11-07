@@ -3,7 +3,7 @@
  * @author Group_7_DBA
  */
 
-import view.mainView;
+import view.MainView;
 import controller.Controller;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
@@ -32,8 +32,9 @@ public class Launcher {
             World world = new World();
             
             // Create the agent model
-            Environment model = new Environment(world);
+            Environment environment = new Environment();
 
+            
             // -------------------------
             // LANZAMOS EL AGENTE
             // -------------------------
@@ -48,24 +49,25 @@ public class Launcher {
 
             // Creamos el controlador de Main container
             ContainerController cc = rt.createMainContainer(p);
+            AgentController acHW = null;
 
             try {
                 // Crear y lanzar el agente
-                AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), 
-                                        new Object[]{model});
-                acHW.start();
+                acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), 
+                                        new Object[]{environment});
+     
 
             } catch (StaleProxyException ex) {
                 System.getLogger(Launcher.class.getName()).log(System.Logger.Level.ERROR,
                         (String) null, ex);
             }
 
-            
-            // view
-            mainView view = new mainView(model, world);
+            //------------------------------------------------------------------
+            // view (Se le pasa mundo, pero recibe un objeto de la interfaz)
+            MainView view = new MainView(world);
             
             // controller
-            Controller controller = new Controller(view, world, model, cc);
+            Controller controller = new Controller(view, world, environment, cc, acHW);
             
             controller.read_map("./maps/mapWithoutObstacle.txt");
             

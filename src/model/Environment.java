@@ -10,33 +10,37 @@ public class Environment {
     private int agentY;
     private int goalX;
     private int goalY;
-    private World world;
     
-    public Environment(World world) {
-        this.world = world;
-        
-    }
-    
+    // Activates or deactivates the 
+    private boolean run = false;
     
     // Getters and Setters
 
     public int getAgentX() { return agentX; }
     public int getAgentY() { return agentY; }
+    
+    /**
+     * @param x
+     * @param y 
+     * @pre position is valid in the world
+     */
     public void setAgentPosition(int x, int y) {
         System.out.println(x + " " +y);
-        if (this.world.isValidPosition(x, y)) {
-            this.agentX = x;
-            this.agentY = y;
-        }
+        this.agentX = x;
+        this.agentY = y;
     }
 
     public int getGoalX() { return goalX; }
     public int getGoalY() { return goalY; }
+        
+    /**
+     * @param x
+     * @param y 
+     * @pre position is valid in the world
+     */
     public void setGoalPosition(int x, int y) {
-        if (this.world.isValidPosition(x, y)) {
-            this.goalX = x;
-            this.goalY = y;
-        }
+        this.goalX = x;
+        this.goalY = y;  
     }
     
         // Lógica de negocio en el modelo

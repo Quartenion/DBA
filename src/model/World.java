@@ -1,6 +1,6 @@
 package model;
 
-public class World {
+public class World implements WorldViewInterface {
     
     private int[][] map;
     private int rows;
@@ -17,13 +17,20 @@ public class World {
                 y < cols && map[x][y] != -1);
     }
 
-    // Métodos existentes (sin cambios)
+    // Getters
+    @Override
     public int getRows() { return this.rows; }
+    @Override
     public int getCols() { return this.cols; }
+    @Override
     public int[][] getMap() { return map; }
+    @Override
     public int getTile(int i, int j) { return this.map[i][j]; }
+    @Override
+    public boolean empty() { return (this.map == null || this.map.length == 0); }
+    
+    
     public void setRows(int rows) { this.rows = rows; }
     public void setColumns(int columns) { this.cols = columns; }
     public void setMap(int[][] map) { this.map = map; }
-    public boolean empty() { return (this.map == null || this.map.length == 0); }
 }
