@@ -68,8 +68,7 @@ public class Launcher {
             
             // controller
             Controller controller = new Controller(view, world, environment, cc, acHW);
-            
-            controller.read_map("./maps/mapWithoutObstacle.txt");
+            controller.restart("./maps/mapWithoutObstacle.txt");
             
 
             // Si la lectura por alguna razón no cargó el mapa, mostramos error y salimos.

@@ -6,37 +6,31 @@ import model.WorldViewInterface;
 
 public class MainView extends JFrame {
     
-    private MatrixView matrixPanel;
-    private InfoPanelView infoPanel;
+    private MatrixView matrixPanel  = null;
+    private InfoPanelView infoPanel = null;
     
     public MainView(WorldViewInterface world) {
         setTitle("Simulación de Mundo - Agente");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
-        
-        initComponents(world);
-        pack();
-        setLocationRelativeTo(null);
     }
     
-    private void initComponents(WorldViewInterface world) {
+    
+    /**
+     * @brief Creates the initial
+     * @param world 
+     */
+    public void initComponents(WorldViewInterface world) {
+        if (this.matrixPanel != null) remove(this.matrixPanel);
+        if (this.infoPanel != null)   remove(this.infoPanel);
+        
         this.matrixPanel = new MatrixView(world);
         this.infoPanel = new InfoPanelView();
 
         add(this.matrixPanel, BorderLayout.CENTER);
         add(this.infoPanel, BorderLayout.EAST);
-    }
-    
-    public void initMatrix(){
-        this.matrixPanel.initMatrix();
-    }
-
-    public MatrixView getMatrixPanel() {
-        return matrixPanel;
-    }
-    
-    public InfoPanelView getInfoPanel() {
-        return infoPanel;
+        pack();
+        setLocationRelativeTo(null);
     }
     
     // Setters
@@ -47,6 +41,7 @@ public class MainView extends JFrame {
     public void setGoalDoublePos(double x, double y){
         this.matrixPanel.setGoalDoublePos(x,y);
     }
+    
     
     // Getters
     public int getPanelSize() {

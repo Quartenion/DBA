@@ -40,6 +40,8 @@ public class Controller {
     private java.util.function.BiConsumer<Integer, Integer> goalPositionListener;
     
     /**
+     * @brief The constructor doesnt do anything crazy, only creates the listeners
+     *        so it doesnt create any problem.
      * @param view Vista principal, que luego encapsula las otras vistas
      * @param modelWorld Modelo del mundo fisico
      * @param model Modelo del entorno del agente
@@ -56,14 +58,14 @@ public class Controller {
         this.acHW = acHW;
         
         createEventListeners();
-        initializeMapSelector();
-        initializeViewToggles();
-        syncFloatPositions();
+        //initializeMapSelector();
+        //initializeViewToggles();
         
     }
 
     
-    // TODOS LOS LISTENERS DE LA APP
+    //--------------------------------------------------------------------------
+    // APP LISTENERS
     private void createEventListeners(){
         
         // Listener para cerrar la aplicacion y parar la ejecucion de jade
@@ -83,6 +85,7 @@ public class Controller {
                 System.exit(0); 
             }
         });
+        
         
         // Listener para el click del raton
         view.addMouseListener(new MouseAdapter() {
@@ -170,34 +173,21 @@ public class Controller {
         });
     }
     
-    
-    
-    
-    // FUNCIONES DE CREACION Y DESTRUCCION DE LOS MAPAS
-    private void initializeMapSelector() {
-        File dir = new File(mapsDir);
-        if (dir.exists() && dir.isDirectory()) {
-            String[] maps = dir.list((d, name) -> name.endsWith(".txt"));
-            if (maps != null) {
-                view.getInfoPanel().setMapList(maps);
-            }
-        }
-
-        view.getInfoPanel().addMapSelectorListener(e -> {
-            String selectedMap = view.getInfoPanel().getSelectedMap();
-            if (selectedMap != null) {
-                loadMap(selectedMap);
-            }
-        });
+      
+    //--------------------------------------------------------------------------
+    // This funcion is needed each time the map is changed, so a listener
+    // in the map selector is needed to launch this function.
+    // its also needed to launch this after the constructor to have a map
+    public void restart(String rutaArchivo){
+        read_map(rutaArchivo);
+        this.view.initComponents(modelWorld);
+        syncDoublePositions();
     }
     
-    private void initializeViewToggles() {
-        view.getInfoPanel().addShowVisitedListener(e -> view.getMatrixPanel().repaint());
-        view.getInfoPanel().addShowMemoryListener(e -> view.getMatrixPanel().repaint());
-    }
-    
-    
-    public void read_map(String rutaArchivo) {
+    // Private function to read a map, its only used in restart
+    // This is the only function to modify the physical world
+    // pre: modelWorld and model is freed
+    private void read_map(String rutaArchivo) {
         
         try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
             int rows = Integer.parseInt(br.readLine().trim());
@@ -222,44 +212,13 @@ public class Controller {
 
     
     
-    // Cargar el mapa a partir de una archivo CORREGIR
-    private void loadMap(String mapName) {
-        try {
-            read_map(mapsDir + mapName);
-            syncViewWithModel();
-            view.getInfoPanel().setActionsCount(0);
-            // El log se añade dentro de syncViewWithModel() vía positionChangedListener
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            view.getInfoPanel().addLogEntry("Error cargando el mapa: " + mapName);
-        }
-    }
-    
-    
-
-
-    
-    // SYNCS
-    // Sincroniza la posicion para mover el agente
-    private void syncFloatPositions() {
+    // SETTERS
+    // Sincroniza la posicion para mover el agente con el cursor
+    private void syncDoublePositions() {
         this.view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
         this.view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
     }
-    
-    // Sincroniza toda la vista con el modelo
-    private void syncViewWithModel() {
-        // view.getMatrixPanel().syncWithModel(); // Esto dispara positionChangedListener
-    }
-    
-    // Sincroniza las posiciones flotantes con el modelo
-    public void syncWithModel() {
-        //if (positionChangedListener != null) 
-            //positionChangedListener.run();
-        //repaint();
-    }
 
-
-    
     // GETTERS
     public int getAgentX(){
         return model.getAgentX();
@@ -275,4 +234,59 @@ public class Controller {
     }
     
     
+    
+    
+    // Cargar el mapa a partir de una archivo CORREGIR
+    /* Deprecated
+    private void loadMap(String mapName) {
+        try {
+            read_map(mapsDir + mapName);
+            syncViewWithModel();
+            view.getInfoPanel().setActionsCount(0);
+            // El log se añade dentro de syncViewWithModel() vía positionChangedListener
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            view.getInfoPanel().addLogEntry("Error cargando el mapa: " + mapName);
+        }
+    }
+    */
+    /*
+    // Sincroniza toda la vista con el modelo
+    private void syncViewWithModel() {
+        // view.getMatrixPanel().syncWithModel(); // Esto dispara positionChangedListener
+    }
+    
+    // Sincroniza las posiciones flotantes con el modelo
+    public void syncWithModel() {
+        //if (positionChangedListener != null) 
+            //positionChangedListener.run();
+        //repaint();
+    }
+    */
+    
+    // FUNCIONES DE CREACION Y DESTRUCCION DE LOS MAPAS
+    /* deprecated
+    private void initializeMapSelector() {
+        File dir = new File(mapsDir);
+        if (dir.exists() && dir.isDirectory()) {
+            String[] maps = dir.list((d, name) -> name.endsWith(".txt"));
+            if (maps != null) {
+                view.getInfoPanel().setMapList(maps);
+            }
+        }
+
+        view.getInfoPanel().addMapSelectorListener(e -> {
+            String selectedMap = view.getInfoPanel().getSelectedMap();
+            if (selectedMap != null) {
+                loadMap(selectedMap);
+            }
+        });
+    }
+    
+    private void initializeViewToggles() {
+        view.getInfoPanel().addShowVisitedListener(e -> view.getMatrixPanel().repaint());
+        view.getInfoPanel().addShowMemoryListener(e -> view.getMatrixPanel().repaint());
+    }
+    
+    */
 }

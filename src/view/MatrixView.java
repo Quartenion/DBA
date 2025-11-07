@@ -17,10 +17,11 @@ public class MatrixView extends JPanel {
 
     public MatrixView(WorldViewInterface matrix) {
         this.matrix = matrix;
+        initMatrix();
         setPreferredSize(new Dimension(panelSize, panelSize));
     }
     
-    public void initMatrix(){
+    private void initMatrix(){
         this.cellSize = Math.min(panelSize / this.matrix.getRows(), 
                                  panelSize / this.matrix.getCols());
         repaint();
