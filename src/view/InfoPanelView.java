@@ -29,6 +29,7 @@ public class InfoPanelView extends JPanel {
     // Toggle buttons de vistas
     private JToggleButton showVisitedBtn;
     private JToggleButton showMemoryBtn;
+    private JToggleButton runBtn;
 
     // Log de acciones
     private DefaultListModel<String> logModel;
@@ -85,9 +86,11 @@ public class InfoPanelView extends JPanel {
 
         showVisitedBtn = new JToggleButton("Mostrar visitadas");
         showMemoryBtn = new JToggleButton("Mostrar memoria");
+        runBtn = new JToggleButton("Run");
 
         viewsPanel.add(showVisitedBtn);
         viewsPanel.add(showMemoryBtn);
+        viewsPanel.add(runBtn);
 
         gbc.gridy++;
         add(viewsPanel, gbc);
@@ -161,6 +164,10 @@ public class InfoPanelView extends JPanel {
 
     public void addShowMemoryListener(ActionListener listener) {
         showMemoryBtn.addActionListener(listener);
+    }
+    
+    public void addRunListener(ActionListener listener){
+        runBtn.addActionListener(listener);
     }
 
     public boolean isShowVisitedSelected() {

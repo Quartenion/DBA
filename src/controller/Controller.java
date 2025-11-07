@@ -29,7 +29,6 @@ public class Controller {
     
     private Environment model;
     private ContainerController cc;
-    private AgentController acHW;
     
     private boolean isRunning = false;
     private boolean draggingAgent = false;
@@ -46,16 +45,14 @@ public class Controller {
      * @param modelWorld Modelo del mundo fisico
      * @param model Modelo del entorno del agente
      * @param cc Modelo del contenedor del agente (Para luego parar la ejecucion)
-     * @param acHW Controlador del agente
      */
     public Controller(MainView view, World modelWorld, Environment model, 
-                            ContainerController cc, AgentController acHW){
+                            ContainerController cc){
         
         this.view = view;
         this.model = model;
         this.modelWorld = modelWorld;
         this.cc = cc;
-        this.acHW = acHW;
         
         createEventListeners();
         //initializeMapSelector();
@@ -65,7 +62,7 @@ public class Controller {
 
     
     //--------------------------------------------------------------------------
-    // APP LISTENERS
+    // APP LISTENERS -> Only executes one time at the start
     private void createEventListeners(){
         
         // Listener para cerrar la aplicacion y parar la ejecucion de jade
@@ -85,8 +82,7 @@ public class Controller {
                 System.exit(0); 
             }
         });
-        
-        
+                
         // Listener para el click del raton
         view.addMouseListener(new MouseAdapter() {
             @Override
@@ -173,8 +169,21 @@ public class Controller {
         });
     }
     
-      
-    //--------------------------------------------------------------------------
+    
+    // Each time the app is restarted this is executed
+    // Add here all the listeners for the buttons of info panel
+    private void createViewListeners(){
+        // Listener para boton de pausa
+        view.addRunListener(e -> {
+           if (this.model.isRunning())
+               this.model.stop();
+           else
+               this.model.run();           
+        });
+    }
+    
+    
+    
     // This funcion is needed each time the map is changed, so a listener
     // in the map selector is needed to launch this function.
     // its also needed to launch this after the constructor to have a map
@@ -182,6 +191,7 @@ public class Controller {
         read_map(rutaArchivo);
         this.view.initComponents(modelWorld);
         syncDoublePositions();
+        createViewListeners();
     }
     
     // Private function to read a map, its only used in restart

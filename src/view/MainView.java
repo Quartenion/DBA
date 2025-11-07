@@ -2,6 +2,7 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import model.WorldViewInterface;
 
 public class MainView extends JFrame {
@@ -62,4 +63,11 @@ public class MainView extends JFrame {
     public double getGoalDoubleY() {
         return matrixPanel.getGoalDoubleY();
     }
+    
+    
+    // ADD listeners functionality
+    public void addRunListener(ActionListener listener){
+        this.infoPanel.addRunListener(listener);
+    }
+
 }

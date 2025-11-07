@@ -30,7 +30,9 @@ public class AgentP2 extends Agent {
         System.out.println("Terminating agent...");
     }
     
-    
+    public boolean isRunning(){
+        return this.model.isRunning();
+    }
     
     //-------------------------------------------------------
     // The see behaviour uses the sensors
@@ -44,6 +46,9 @@ public class AgentP2 extends Agent {
         
         @Override
         public void onTick(){
+            if (!((AgentP2) myAgent).isRunning()) {
+                return; // Salta este tick
+            }
             System.out.println("\neco");
         }
     }
@@ -58,6 +63,9 @@ public class AgentP2 extends Agent {
         
         @Override
         public void onTick(){
+            if (!((AgentP2) myAgent).isRunning()) {
+                return; // Salta este tick
+            }
             System.out.println("\neco2");
         }
         
@@ -74,6 +82,9 @@ public class AgentP2 extends Agent {
         
         @Override
         public void onTick(){
+            if (!((AgentP2) myAgent).isRunning()) {
+                return; // Salta este tick
+            }
             System.out.println("\neco3");
         }
     }

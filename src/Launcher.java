@@ -49,13 +49,12 @@ public class Launcher {
 
             // Creamos el controlador de Main container
             ContainerController cc = rt.createMainContainer(p);
-            AgentController acHW = null;
 
             try {
                 // Crear y lanzar el agente
-                acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), 
+                AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), 
                                         new Object[]{environment});
-     
+                acHW.start();
 
             } catch (StaleProxyException ex) {
                 System.getLogger(Launcher.class.getName()).log(System.Logger.Level.ERROR,
@@ -67,7 +66,7 @@ public class Launcher {
             MainView view = new MainView(world);
             
             // controller
-            Controller controller = new Controller(view, world, environment, cc, acHW);
+            Controller controller = new Controller(view, world, environment, cc);
             controller.restart("./maps/mapWithoutObstacle.txt");
             
 
