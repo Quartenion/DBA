@@ -6,14 +6,12 @@ package controller;
  */
 
 
-import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.ControllerException;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -60,9 +58,45 @@ public class Controller {
         
     }
 
-    
+
     //--------------------------------------------------------------------------
     // APP LISTENERS -> Only executes one time at the start
+    /*
+    private void setupViewListeners() {
+        // Escuchar intentos de cambio de posición del agente
+        view.getMatrixPanel().setAgentPositionListener((row, col) -> {
+            this.model.setAgentPosition(row, col);
+            syncViewWithModel();
+        });
+
+        // Escuchar intentos de cambio de posición del objetivo
+        view.getMatrixPanel().setGoalPositionListener((row, col) -> {
+            this.model.setGoalPosition(row, col);
+            syncViewWithModel();
+        });
+
+        // Listener para actualizar log y panel de info cuando cambia la posición
+        view.getMatrixPanel().setPositionChangedListener(() -> {
+            view.getInfoPanel().setAgentPosition(this.model.getAgentX(), this.model.getAgentY());
+            view.getInfoPanel().setGoalPosition(this.model.getGoalX(), this.model.getGoalY());
+            view.getInfoPanel().setGoalReached(this.model.isGoalReached());
+            view.getInfoPanel().addLogEntry(
+                "Agente: (" + this.model.getAgentX() + "," + this.model.getAgentY() + 
+                ") | Objetivo: (" + this.model.getGoalX() + "," + this.model.getGoalY() + ")"
+            );
+        });
+
+        // ============================================
+        // TIMER PARA ACTUALIZAR LA VISTA AUTOMÁTICAMENTE
+        // ============================================
+        javax.swing.Timer timer = new javax.swing.Timer(500, e -> {
+            syncViewWithModel();
+            view.getInfoPanel().setActionsCount(this.model.getEnergyUsed());
+        });
+        timer.start();
+    }
+    */
+    // Functions to control the app
     private void createEventListeners(){
         
         // Listener para cerrar la aplicacion y parar la ejecucion de jade
@@ -180,6 +214,8 @@ public class Controller {
            else
                this.model.run();           
         });
+        
+        
     }
     
     
@@ -251,6 +287,12 @@ public class Controller {
     private void loadMap(String mapName) {
         try {
             read_map(mapsDir + mapName);
+
+            // Limpiar memoria y energía al cargar nuevo mapa
+            this.model.clearMemory();
+            this.model.resetEnergy();
+            this.model.resetEnergy();
+
             syncViewWithModel();
             view.getInfoPanel().setActionsCount(0);
             // El log se añade dentro de syncViewWithModel() vía positionChangedListener

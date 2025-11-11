@@ -32,7 +32,7 @@ public class Launcher {
             World world = new World();
             
             // Create the agent model
-            Environment environment = new Environment();
+            Environment environment = new Environment(world);
 
             
             // -------------------------
