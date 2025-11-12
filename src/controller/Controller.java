@@ -241,13 +241,21 @@ public class Controller {
             this.isRunning = this.model.isRunning(); // Sincronizar estado local
         });
         
-        // Timer para actualizar energía y estado cada 200 ms (solo cuando corre)
-        javax.swing.Timer uiTimer = new javax.swing.Timer(200, e -> {
+        // Timer para actualizar energía, posicion y estado cada 200 ms (solo cuando corre)
+        javax.swing.Timer uiTimer = new javax.swing.Timer(1, e -> {
             if (isRunning) {
+                // 1. Actualizar datos del panel lateral
                 view.setActionsCount(model.getEnergyUsed());
-                // Opcional: también actualizar posición si el agente se mueve solo
-                // view.setAgentPosition(model.getAgentX(), model.getAgentY());
-                // view.setGoalReached(model.isGoalReached());
+                view.setAgentPosition(model.getAgentX(), model.getAgentY());
+                view.setGoalReached(model.isGoalReached());
+
+                // 2. ✅ Sincronizar posición visual flotante con la posición entera del modelo
+                //    Esto es esencial para que el agente se vea en la celda correcta durante la ejecución automática
+                view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
+                view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
+
+                // Opcional: solo repintar si hubo cambio real (mejora rendimiento)
+                // view.repaint(); // setAgentDoublePos() ya hace repaint()
             }
         });
         uiTimer.start(); // ⚠️ Guarda la referencia si quieres .stop() después
