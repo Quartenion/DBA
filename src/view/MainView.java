@@ -14,12 +14,12 @@ public class MainView extends JFrame {
         setTitle("Simulación de Mundo - Agente");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
+        // Inicialización inicial
+        initComponents(world);
     }
     
-    
     /**
-     * @brief Creates the initial
-     * @param world 
+     * Inicializa la interfaz completa (solo al inicio).
      */
     public void initComponents(WorldViewInterface world) {
         if (this.matrixPanel != null) remove(this.matrixPanel);
@@ -34,40 +34,90 @@ public class MainView extends JFrame {
         setLocationRelativeTo(null);
     }
     
-    // Setters
-    public void setAgentDoublePos(double x, double y){
+    /**
+     * Reinicia SOLO la vista del mapa (conserva InfoPanelView y sus listeners).
+     */
+    public void resetMapView(WorldViewInterface world) {
+        if (this.matrixPanel != null) {
+            remove(this.matrixPanel);
+        }
+        this.matrixPanel = new MatrixView(world);
+        add(this.matrixPanel, BorderLayout.CENTER);
+        revalidate();
+        repaint();
+    }
+    
+    // Setters delegados
+    public void setAgentDoublePos(double x, double y) {
         this.matrixPanel.setAgentDoublePos(x, y);
     }
     
-    public void setGoalDoublePos(double x, double y){
-        this.matrixPanel.setGoalDoublePos(x,y);
+    public void setGoalDoublePos(double x, double y) {
+        this.matrixPanel.setGoalDoublePos(x, y);
     }
     
+    public void addLogEntry(String log) {
+        this.infoPanel.addLogEntry(log);
+    }
+    
+    public void setGoalReached(boolean reached) {
+        this.infoPanel.setGoalReached(reached);
+    }
+    
+    public void setActionsCount(int energy) {
+        this.infoPanel.setActionsCount(energy);
+    }
+    
+    public void setAgentPosition(int x, int y) {
+        this.infoPanel.setAgentPosition(x, y);
+    }
+    
+    public void setGoalPosition(int x, int y) {
+        this.infoPanel.setGoalPosition(x, y);
+    }
     
     // Getters
-    public int getPanelSize() {
-        return matrixPanel.getPanelSize();
-    }
     public int getCellSize() {
         return matrixPanel.getCellSize();
     }
+    
     public double getAgentDoubleX() {
         return matrixPanel.getAgentDoubleX();
     }
+    
     public double getAgentDoubleY() {
         return matrixPanel.getAgentDoubleY();
     }
+    
     public double getGoalDoubleX() {
         return matrixPanel.getGoalDoubleX();
     }
+    
     public double getGoalDoubleY() {
         return matrixPanel.getGoalDoubleY();
     }
     
-    
-    // ADD listeners functionality
-    public void addRunListener(ActionListener listener){
-        this.infoPanel.addRunListener(listener);
+    // Delegación para el selector de mapas (encapsulación)
+    public void setMapList(String[] maps) {
+        if (infoPanel != null) infoPanel.setMapList(maps);
     }
-
+    
+    public void addMapSelectorListener(ActionListener listener) {
+        if (infoPanel != null) infoPanel.addMapSelectorListener(listener);
+    }
+    
+    public String getSelectedMap() {
+        return (infoPanel != null) ? infoPanel.getSelectedMap() : null;
+    }
+    
+    // Delegación para botón Run
+    public void addRunListener(ActionListener listener) {
+        if (infoPanel != null) infoPanel.addRunListener(listener);
+    }
+    
+    public void setRunButtonSelected(boolean selected) {
+        if (infoPanel != null) {
+            infoPanel.setRunButtonSelected(selected);
+        }
+    }
 }

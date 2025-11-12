@@ -181,4 +181,8 @@ public class InfoPanelView extends JPanel {
     public String getSelectedMap() {
         return (String) mapSelector.getSelectedItem();
     }
+    
+    public void setRunButtonSelected(boolean selected) {
+        runBtn.setSelected(selected);
+    }
 }

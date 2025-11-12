@@ -21,23 +21,30 @@ public class MatrixView extends JPanel {
         setPreferredSize(new Dimension(panelSize, panelSize));
     }
     
-    private void initMatrix(){
-        this.cellSize = Math.min(panelSize / this.matrix.getRows(), 
-                                 panelSize / this.matrix.getCols());
+    private void initMatrix() {
+        int rows = this.matrix.getRows();
+        int cols = this.matrix.getCols();
+        // Evitar división por cero si el mundo aún no está inicializado
+        if (rows <= 0 || cols <= 0) {
+            this.cellSize = 1; // valor por defecto seguro
+        } else {
+            this.cellSize = Math.min(panelSize / rows, panelSize / cols);
+        }
         repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (matrix.empty()) return;
-        
-        this.cellSize = Math.min(panelSize / this.matrix.getRows(), 
-                                 panelSize / this.matrix.getCols());
+        super.paintComponent(g);  // ✅ Primero limpia el fondo
 
-        // Dibujar el mapa
-        for (int i = 0; i < this.matrix.getRows(); i++) {
-            for (int j = 0; j < this.matrix.getCols(); j++) {
+        if (matrix == null || matrix.empty() || cellSize <= 0) return;
+
+        // Recalcular cellSize (seguro)
+        this.cellSize = Math.min(getWidth() / matrix.getCols(), getHeight() / matrix.getRows());
+
+        // Dibujar el mapa (como antes)
+        for (int i = 0; i < matrix.getRows(); i++) {
+            for (int j = 0; j < matrix.getCols(); j++) {
                 Color color = switch(matrix.getTile(i, j)) {
                     case 0 -> Color.WHITE;
                     case -1 -> Color.BLACK;
@@ -50,17 +57,20 @@ public class MatrixView extends JPanel {
             }
         }
 
-        // ✅ Dibujar OBJETIVO desde posición flotante (para arrastre suave)
+        // ✅ Dibujar OBJETIVO (mejor como círculo centrado)
         g.setColor(Color.GREEN);
+        int goalSize = cellSize - cellSize / 6;
+        int goalX = (int)(goalDoubleY * cellSize + cellSize / 2 - goalSize / 2);
+        int goalY = (int)(goalDoubleX * cellSize + cellSize / 2 - goalSize / 2);
         g.fillRect((int)(goalDoubleY * cellSize), (int)(goalDoubleX * cellSize), 
-                                                          cellSize, cellSize);
+                                                            cellSize, cellSize);
 
-        // ✅ Dibujar AGENTE desde posición flotante (para arrastre suave)
+        // ✅ Dibujar AGENTE (círculo centrado)
         g.setColor(Color.BLUE);
-        int margin = cellSize / 4;
-        g.fillOval((int)(agentDoubleY * cellSize + margin/2), 
-                   (int)(agentDoubleX * cellSize + margin/2), 
-                   cellSize - margin, cellSize - margin);
+        int agentSize = cellSize - cellSize / 3;
+        int agentX = (int)(agentDoubleY * cellSize + cellSize / 2 - agentSize / 2);
+        int agentY = (int)(agentDoubleX * cellSize + cellSize / 2 - agentSize / 2);
+        g.fillOval(agentX, agentY, agentSize, agentSize);
     }
     
     
@@ -68,11 +78,13 @@ public class MatrixView extends JPanel {
     public void setAgentDoublePos(double x, double y){
         this.agentDoubleX = x;
         this.agentDoubleY = y;
+        repaint();
     }
     
     public void setGoalDoublePos(double x, double y){
         this.goalDoubleX = x;
         this.goalDoubleY = y;
+        repaint();
     }
     
     // Getters
