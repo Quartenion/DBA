@@ -63,7 +63,7 @@ public class Launcher {
 
             //------------------------------------------------------------------
             // view (Se le pasa mundo, pero recibe un objeto de la interfaz)
-            MainView view = new MainView(world);
+            MainView view = new MainView(world, environment);
             
             // controller
             Controller controller = new Controller(view, world, environment, cc);

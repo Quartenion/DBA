@@ -3,6 +3,7 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import model.Environment;
 import model.WorldViewInterface;
 
 public class MainView extends JFrame {
@@ -10,38 +11,43 @@ public class MainView extends JFrame {
     private MatrixView matrixPanel  = null;
     private InfoPanelView infoPanel = null;
     
-    public MainView(WorldViewInterface world) {
+    public MainView(WorldViewInterface world, Environment model) {
         setTitle("Simulación de Mundo - Agente");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
         // Inicialización inicial
-        initComponents(world);
+        initComponents(world, model);
     }
     
     /**
      * Inicializa la interfaz completa (solo al inicio).
+     * @param world
+     * @param model
      */
-    public void initComponents(WorldViewInterface world) {
+    public void initComponents(WorldViewInterface world, Environment model) {
         if (this.matrixPanel != null) remove(this.matrixPanel);
         if (this.infoPanel != null)   remove(this.infoPanel);
         
-        this.matrixPanel = new MatrixView(world);
+        this.matrixPanel = new MatrixView(world, model);
         this.infoPanel = new InfoPanelView();
-
+        
+        
         add(this.matrixPanel, BorderLayout.CENTER);
         add(this.infoPanel, BorderLayout.EAST);
+        
         pack();
         setLocationRelativeTo(null);
     }
     
     /**
      * Reinicia SOLO la vista del mapa (conserva InfoPanelView y sus listeners).
+     * @param world
      */
-    public void resetMapView(WorldViewInterface world) {
+    public void resetMapView(WorldViewInterface world, Environment model) {
         if (this.matrixPanel != null) {
             remove(this.matrixPanel);
         }
-        this.matrixPanel = new MatrixView(world);
+        this.matrixPanel = new MatrixView(world, model);
         add(this.matrixPanel, BorderLayout.CENTER);
         revalidate();
         repaint();
@@ -74,6 +80,14 @@ public class MainView extends JFrame {
     
     public void setGoalPosition(int x, int y) {
         this.infoPanel.setGoalPosition(x, y);
+    }
+    
+    public void addShowVisitedListener(ActionListener listener) {
+        this.infoPanel.addShowVisitedListener(listener);
+    }
+
+    public void addShowMemoryListener(ActionListener listener) {
+        this.infoPanel.addShowMemoryListener(listener);
     }
     
     // Getters
@@ -120,4 +134,14 @@ public class MainView extends JFrame {
             infoPanel.setRunButtonSelected(selected);
         }
     }
+    
+    
+    public void toggleShowMemory(){
+        this.matrixPanel.toggleShowMemory();
+    }
+    
+    public void toggleShowVisited(){
+        this.matrixPanel.toggleShowVisited();
+    }
+    
 }

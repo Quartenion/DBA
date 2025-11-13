@@ -1,22 +1,29 @@
 package view;
 
 import java.awt.*;
+import java.util.Set;
 import javax.swing.JPanel;
 import model.WorldViewInterface;
+import model.Environment;
 
 public class MatrixView extends JPanel {
     
     private final WorldViewInterface matrix;
+    private final Environment model;
     private final int panelSize = 800;
     private int cellSize;
+    
+    private boolean showVisited = false;
+    private boolean showMemory  = false;
     
     // Solo para renderizado "flotante"
     private double agentDoubleX, agentDoubleY;
     private double goalDoubleX, goalDoubleY;
 
 
-    public MatrixView(WorldViewInterface matrix) {
+    public MatrixView(WorldViewInterface matrix, Environment model) {
         this.matrix = matrix;
+        this.model = model;
         initMatrix();
         setPreferredSize(new Dimension(panelSize, panelSize));
     }
@@ -41,27 +48,52 @@ public class MatrixView extends JPanel {
 
         // Recalcular cellSize (seguro)
         this.cellSize = Math.min(getWidth() / matrix.getCols(), getHeight() / matrix.getRows());
+        
+        // Obtener memoria del modelo
+        Set<String> visitedCells = model.getVisitedCells();
+        Set<String> seenCells    = model.getSeenCells();
+        
 
         // Dibujar el mapa (como antes)
         for (int i = 0; i < matrix.getRows(); i++) {
             for (int j = 0; j < matrix.getCols(); j++) {
-                Color color = switch(matrix.getTile(i, j)) {
-                    case 0 -> Color.WHITE;
-                    case -1 -> Color.BLACK;
-                    default -> Color.LIGHT_GRAY;
-                };
+                String cellKey = i + "," + j;
+                Color color;
+                
+                
+                // Prioridad de colores:
+                // 1. Obstáculos (negro)
+                // 2. Visitadas (amarillo claro) - si el toggle está activo
+                // 3. Vistas (azul muy claro) - si el toggle está activo
+                // 4. No exploradas (blanco)
+                
+                switch(matrix.getTile(i, j)){
+                    case 0 ->   {
+                                if (showVisited && visitedCells.contains(cellKey)){
+                                    color = new Color(255, 255, 150);
+                                }
+                                else if (showMemory && seenCells.contains(cellKey)){
+                                    color = new Color(200,220,255);
+                                }
+                                else{
+                                    color = Color.WHITE;
+                                }
+                                }
+                    case -1 -> color = Color.BLACK;
+                    default -> color = Color.LIGHT_GRAY;
+                    
+                }
+
                 g.setColor(color);
                 g.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
                 g.setColor(Color.BLACK);
                 g.drawRect(j * cellSize, i * cellSize, cellSize, cellSize);
+
             }
         }
 
         // ✅ Dibujar OBJETIVO (mejor como círculo centrado)
         g.setColor(Color.GREEN);
-        int goalSize = cellSize - cellSize / 6;
-        int goalX = (int)(goalDoubleY * cellSize + cellSize / 2 - goalSize / 2);
-        int goalY = (int)(goalDoubleX * cellSize + cellSize / 2 - goalSize / 2);
         g.fillRect((int)(goalDoubleY * cellSize), (int)(goalDoubleX * cellSize), 
                                                             cellSize, cellSize);
 
@@ -86,6 +118,15 @@ public class MatrixView extends JPanel {
         this.goalDoubleY = y;
         repaint();
     }
+    
+    public void toggleShowMemory(){
+        this.showMemory = !this.showMemory;
+    }
+    
+    public void toggleShowVisited(){
+        this.showVisited = !this.showVisited;
+    }
+    
     
     // Getters
     public int getPanelSize() {

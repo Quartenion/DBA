@@ -240,6 +240,16 @@ public class Controller {
             this.isRunning = this.model.isRunning(); // Sincronizar estado local
         });
         
+        view.addShowVisitedListener(e -> {
+                    view.toggleShowVisited();
+                    view.repaint();
+                });
+        
+        view.addShowMemoryListener(e -> {
+                    view.toggleShowMemory();
+                    view.repaint();
+                });
+        
         // Timer para actualizar energía, posicion y estado cada 200 ms (solo cuando corre)
         javax.swing.Timer uiTimer = new javax.swing.Timer(1, e -> {
             if (isRunning) {
@@ -324,7 +334,7 @@ public class Controller {
         this.isRunning = false;  // Garantizar pausa (redundante si ya era falso, pero seguro)
 
         // ✅ Solo reconstruir la vista del mapa, no el panel de control
-        view.resetMapView(modelWorld);
+        view.resetMapView(modelWorld, model);
 
         // Sincronizar estado inicial
         view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
