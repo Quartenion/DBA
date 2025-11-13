@@ -134,6 +134,7 @@ public class AgentP2 extends Agent {
             ((AgentP2) myAgent).changeState(State.THINK);
             
             
+            
             // Esperar a que See haya completado
             Boolean seeComplete = (Boolean) getDataStore().get("seeComplete");
             if (seeComplete == null || !seeComplete) {
@@ -146,6 +147,7 @@ public class AgentP2 extends Agent {
             // Obtener percepción del datastore
             Map<RelativePos,Integer> perception = 
                      (Map<RelativePos,Integer>) getDataStore().get("perception");
+            
             
             
             // ESTRATEGIA SIMPLE: Ir primero en X (filas), luego en Y (columnas)

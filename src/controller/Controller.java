@@ -28,7 +28,6 @@ import java.awt.event.MouseMotionAdapter;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashSet;
 import model.Environment;
 import model.World;
 import view.MainView;
