@@ -1,4 +1,3 @@
-
 package model;
 
 import java.util.ArrayList;
@@ -132,8 +131,9 @@ public class Environment {
     
     // Reinicia la memoria (útil al cargar nuevo mapa)
     public void clearMemory() {
-        visitedCells.clear();
-        seenCells.clear();
+       visitedCells.clear();
+       seenCells.clear();
+       visitCountMap.clear();
     }
     
     // ============================================
@@ -229,13 +229,18 @@ public class Environment {
         
         // TODO ELIMINAR
         // Validar y ejecutar movimiento
+
         agentX = newX;
         agentY = newY;
 
         // Registrar como visitada
         addVisitedCell(newX, newY);
+        
+        // Incrementar contador de visitas
+        incrementVisitCount(newX, newY);
 
         System.out.println("Agente movido a: (" + agentX + ", " + agentY + ")");
+
     }
 
     public int getEnergyUsed() { return energyUsed; }
@@ -245,4 +250,63 @@ public class Environment {
     // Reiniciar energía
     public void resetEnergy() { energyUsed = 0; }
     
+    /**
+    * Obtiene información sobre qué direcciones han sido visitadas
+    * @return array [UP visitado, DOWN visitado, LEFT visitado, RIGHT visitado]
+    *         donde true = ya visitada, false = no visitada
+    */
+   public boolean[] getVisitedDirections() {
+       boolean[] visited = new boolean[4];
+
+       // UP (fila - 1)
+       visited[0] = hasVisited(agentX - 1, agentY);
+
+       // DOWN (fila + 1)
+       visited[1] = hasVisited(agentX + 1, agentY);
+
+       // LEFT (columna - 1)
+       visited[2] = hasVisited(agentX, agentY - 1);
+
+       // RIGHT (columna + 1)
+       visited[3] = hasVisited(agentX, agentY + 1);
+
+       return visited;
+   }
+
+   /**
+    * Cuenta cuántas veces se ha visitado una celda
+    * (Para implementación avanzada de backtracking)
+    */
+   private java.util.Map<String, Integer> visitCountMap = new java.util.HashMap<>();
+
+   public void incrementVisitCount(int x, int y) {
+       String key = x + "," + y;
+       visitCountMap.put(key, visitCountMap.getOrDefault(key, 0) + 1);
+   }
+
+   public int getVisitCount(int x, int y) {
+       return visitCountMap.getOrDefault(x + "," + y, 0);
+   }
+
+   /**
+    * Obtiene el conteo de visitas de las 4 direcciones
+    * @return array [UP count, DOWN count, LEFT count, RIGHT count]
+    */
+   public int[] getVisitCounts() {
+       int[] counts = new int[4];
+
+       // UP
+       counts[0] = getVisitCount(agentX - 1, agentY);
+
+       // DOWN
+       counts[1] = getVisitCount(agentX + 1, agentY);
+
+       // LEFT
+       counts[2] = getVisitCount(agentX, agentY - 1);
+
+       // RIGHT
+       counts[3] = getVisitCount(agentX, agentY + 1);
+
+       return counts;
+   }
 }

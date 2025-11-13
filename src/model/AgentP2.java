@@ -12,7 +12,6 @@ public class AgentP2 extends Agent {
     private Environment model;
     // Time for the tickers
     private final int ACTION_TIME = 500;
-    
     private DataStore sharedDataStore; // DataStore compartido
     
     
@@ -93,10 +92,14 @@ public class AgentP2 extends Agent {
             
             // Method percieve -> Stores the info in the Enviroment
             Map<RelativePos,Integer> perception = model.perceive(sensors);
+            int [] goalDirection = model.getDirectionToGoal();
             
+                
             // Almacenar en datastore compartido
             getDataStore().put("perception", perception);
             getDataStore().put("seeComplete", true);
+            getDataStore().put("goalDirection", goalDirection);
+            
             
             /*
             TODO: revisar -> no entiendo mucho el proposito de esto
@@ -113,15 +116,16 @@ public class AgentP2 extends Agent {
     
     //-------------------------------------------------------
     // COMPORTAMIENTO 2: PENSAR (cada 2 segundos)
+    // Estrategia mejorada con memoria de celdas visitadas
     //-------------------------------------------------------
     class ThinkBehaviour extends TickerBehaviour {
         
         private int tickCount = 0;
-        
+
         public ThinkBehaviour(Agent a, long period){
             super(a, period);
         }
-        
+
         @Override
         public void onTick(){
             tickCount++;
@@ -132,9 +136,7 @@ public class AgentP2 extends Agent {
             
             // The controller will detect the change to edit the UI
             ((AgentP2) myAgent).changeState(State.THINK);
-            
-            
-            
+           
             // Esperar a que See haya completado
             Boolean seeComplete = (Boolean) getDataStore().get("seeComplete");
             if (seeComplete == null || !seeComplete) {
@@ -149,38 +151,150 @@ public class AgentP2 extends Agent {
                      (Map<RelativePos,Integer>) getDataStore().get("perception");
             
             
-            
-            // ESTRATEGIA SIMPLE: Ir primero en X (filas), luego en Y (columnas)
-            String decision = null;
-            
-            RelativePos goalDirection = new RelativePos(model.getGoalX(), model.getGoalY());
-            
-            // Necesitamos movernos en filas?
-            if (goalDirection.getX() < model.getAgentX() && perception.get(sensors.get(0)) == 0) {
-                decision = "UP";
-            } else if (goalDirection.getX() > model.getAgentX() && perception.get(sensors.get(2)) == 0) {
-                decision = "DOWN";
+            int[] goalDirection = (int[]) getDataStore().get("goalDirection");
+
+            if (perception == null || goalDirection == null) {
+                System.out.println("[" + tickCount + "] THINK - Esperando datos de percepcion...");
+                return;
             }
-            // Si no podemos movernos en filas, intentamos columnas
-            else if (goalDirection.getY() < model.getAgentY() && perception.get(sensors.get(3)) == 0) {
-                decision = "LEFT";
-            } else if (goalDirection.getY() > model.getAgentY() && perception.get(sensors.get(1)) == 0) {
-                decision = "RIGHT";
+
+            // Comprobar si ya llegamos al objetivo
+            if (goalDirection[0] == 0 && goalDirection[1] == 0) {
+                System.out.println("[" + tickCount + "] THINK - OBJETIVO ALCANZADO!");
+                getDataStore().put("decision", "STOP");
+                getDataStore().put("thinkComplete", true);
+                return;
             }
-            // Si el camino directo esta bloqueado, buscar alternativa
-            else {
-                if (perception.get(sensors.get(0)) == 0) decision = "UP";
-                else if (perception.get(sensors.get(2)) == 0) decision = "DOWN";
-                else if (perception.get(sensors.get(3)) == 0) decision = "LEFT";
-                else if (perception.get(sensors.get(1)) == 0) decision = "RIGHT";
-                else decision = "BLOCKED"; // No hay salida
-            }
+
+            // Consultar memoria de celdas visitadas
+            boolean[] visited = model.getVisitedDirections();
+            int[] visitCounts = model.getVisitCounts();
+
+            /*
+            System.out.println("[" + tickCount + "] THINK - Analizando opciones:");
+            System.out.println("   Percepcion: UP=" + (perception[0] == 0 ? "Libre" : "Bloq") + 
+                             " DOWN=" + (perception[1] == 0 ? "Libre" : "Bloq") + 
+                             " LEFT=" + (perception[2] == 0 ? "Libre" : "Bloq") + 
+                             " RIGHT=" + (perception[3] == 0 ? "Libre" : "Bloq"));
+            System.out.println("   Visitadas:  UP=" + visited[0] + 
+                             " DOWN=" + visited[1] + 
+                             " LEFT=" + visited[2] + 
+                             " RIGHT=" + visited[3]);
+            */
             
+            // ESTRATEGIA CON PRIORIDADES
+            String decision = decideMovementWithMemory(perception, goalDirection, visited, visitCounts);
+
             getDataStore().put("decision", decision);
             getDataStore().put("thinkComplete", true);
             
-            System.out.println("[" + tickCount + "] THINK - Decision: " + decision);
-               
+            System.out.println("[" + tickCount + "] THINK - Decision final: " + decision);
+        }
+
+        /**
+         * Decide el mejor movimiento considerando:
+         * 1. Dirección del objetivo
+         * 2. Celdas visitadas (evitarlas si es posible)
+         * 3. Backtracking inteligente si es necesario
+         */
+        private String decideMovementWithMemory(Map<RelativePos,Integer> perception, int[] goalDirection, 
+                                               boolean[] visited, int[] visitCounts) {
+
+            // PRIORIDAD 1: Intentar ir directo al objetivo por celda NO visitada
+            String directMove = tryDirectUnvisitedMove(perception, goalDirection, visited);
+            if (directMove != null) {
+                System.out.println("   -> Estrategia: Movimiento directo no visitado");
+                return directMove;
+            }
+
+            // PRIORIDAD 2: Explorar celdas NO visitadas (aunque no sea directo al objetivo)
+            String unexploredMove = tryUnexploredMove(perception, visited);
+            if (unexploredMove != null) {
+                System.out.println("   -> Estrategia: Exploracion de celda nueva");
+                return unexploredMove;
+            }
+
+            // PRIORIDAD 3: Backtracking - ir a la celda menos visitada
+            String backtrackMove = tryBacktracking(perception, visited, visitCounts);
+            if (backtrackMove != null) {
+                System.out.println("   -> Estrategia: Backtracking (celda menos visitada)");
+                return backtrackMove;
+            }
+
+            // PRIORIDAD 4: Completamente bloqueado
+            System.out.println("   -> Estrategia: BLOQUEADO - Sin opciones");
+            return "BLOCKED";
+        }
+        
+
+        /**
+         * ESTRATEGIA 1: Intenta moverse directo al objetivo por celda no visitada
+         */
+        private String tryDirectUnvisitedMove(Map<RelativePos,Integer> perception, 
+                                        int[] goalDirection, boolean[] visited) {
+            // Priorizar movimiento en filas (vertical)
+            if (goalDirection[0] < 0 && perception.get(sensors.get(0)) == 0 && !visited[0]) {
+                return "UP";
+            }
+            if (goalDirection[0] > 0 && perception.get(sensors.get(2)) == 0 && !visited[1]) {
+                return "DOWN";
+            }
+
+            // Luego movimiento en columnas (horizontal)
+            if (goalDirection[1] < 0 && perception.get(sensors.get(3)) == 0 && !visited[2]) {
+                return "LEFT";
+            }
+            if (goalDirection[1] > 0 && perception.get(sensors.get(1)) == 0 && !visited[3]) {
+                return "RIGHT";
+            }
+
+            return null; // No hay camino directo no visitado
+        }
+
+        /**
+         * ESTRATEGIA 2: Explora cualquier celda NO visitada
+         * (Útil cuando el camino directo está bloqueado pero hay alternativas)
+         */
+        private String tryUnexploredMove(Map<RelativePos,Integer> perception, 
+                                                boolean[] visited) {
+            String[] directions = {"UP", "RIGHT", "DOWN", "LEFT"};
+
+            for (int i = 0; i < 4; i++) {
+                if (perception.get(sensors.get(i)) == 0 && !visited[i]) {
+                    return directions[i];
+                }
+            }
+
+            return null; // Todas las celdas libres ya fueron visitadas
+        }
+
+        /**
+         * ESTRATEGIA 3: Backtracking - elige la celda MENOS visitada
+         * (Para salir de callejones sin salida)
+         */
+        private String tryBacktracking(Map<RelativePos,Integer>
+                            perception, boolean[] visited, int[] visitCounts) {
+            String[] directions = {"UP", "RIGHT", "DOWN", "LEFT"};
+
+            String bestDirection = null;
+            int minVisits = Integer.MAX_VALUE;
+
+            for (int i = 0; i < 4; i++) {
+                // Solo considerar celdas libres
+                if (perception.get(sensors.get(i)) == 0) {
+                    if (visitCounts[i] < minVisits) {
+                        minVisits = visitCounts[i];
+                        bestDirection = directions[i];
+                    }
+                }
+            }
+
+            if (bestDirection != null) {
+                System.out.println("   -> Backtracking: eligiendo " + bestDirection + 
+                                 " (visitada " + minVisits + " veces)");
+            }
+
+            return bestDirection;
         }
     }
     
