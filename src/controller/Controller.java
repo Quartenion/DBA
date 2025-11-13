@@ -330,6 +330,7 @@ public class Controller {
 
         read_map(rutaArchivo);   // Carga y actualiza modelo
         model.resetEnergy();
+        model.clearMemory();
         
         this.isRunning = false;  // Garantizar pausa (redundante si ya era falso, pero seguro)
 
