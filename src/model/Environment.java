@@ -14,18 +14,6 @@ import java.util.Set;
  * thread and it can access all the methods too
  * 
  * 
- * MOVEMENT PIPELINE
- * 
- * SEE
- * -> agent starts on one tile
- * -> register that tile and all the adyacent tiles
- * 
- * THINK
- * 
- *
- * 
- * ACTION
- * 
  *  
  */
 
@@ -78,7 +66,7 @@ public class Environment {
         this.agentY = y;
         // Registrar como visitada
         addVisitedCell(x, y);
-        
+        addSeenCell(agentX, agentY);
     }
 
     public synchronized int getGoalX() { return goalX; }
@@ -150,7 +138,7 @@ public class Environment {
                         world.percieve(new RelativePos(agentX,agentY), sensors);
         
         // ADD PERCEPTION
-        addSeenCell(agentX, agentY);
+        // addSeenCell(agentX, agentY); En teoria no hace falta
         
         for (int i = 0; i < sensors.size(); i++){
             int tile = perception.get(sensors.get(i));
@@ -227,14 +215,8 @@ public class Environment {
             }
         }
         
-        // TODO ELIMINAR
-        // Validar y ejecutar movimiento
 
-        agentX = newX;
-        agentY = newY;
-
-        // Registrar como visitada
-        addVisitedCell(newX, newY);
+        this.setAgentPosition(newX, newY);
         
         // Incrementar contador de visitas
         incrementVisitCount(newX, newY);
@@ -260,15 +242,15 @@ public class Environment {
 
        // UP (fila - 1)
        visited[0] = hasVisited(agentX - 1, agentY);
+       
+       // RIGHT (columna + 1)
+       visited[1] = hasVisited(agentX, agentY + 1);
 
        // DOWN (fila + 1)
-       visited[1] = hasVisited(agentX + 1, agentY);
+       visited[2] = hasVisited(agentX + 1, agentY);
 
        // LEFT (columna - 1)
-       visited[2] = hasVisited(agentX, agentY - 1);
-
-       // RIGHT (columna + 1)
-       visited[3] = hasVisited(agentX, agentY + 1);
+       visited[3] = hasVisited(agentX, agentY - 1);
 
        return visited;
    }
@@ -298,14 +280,14 @@ public class Environment {
        // UP
        counts[0] = getVisitCount(agentX - 1, agentY);
 
+       // RIGHT
+       counts[1] = getVisitCount(agentX, agentY + 1);
+
        // DOWN
-       counts[1] = getVisitCount(agentX + 1, agentY);
+       counts[2] = getVisitCount(agentX + 1 , agentY);
 
        // LEFT
-       counts[2] = getVisitCount(agentX, agentY - 1);
-
-       // RIGHT
-       counts[3] = getVisitCount(agentX, agentY + 1);
+       counts[3] = getVisitCount(agentX, agentY - 1);
 
        return counts;
    }

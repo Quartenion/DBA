@@ -142,6 +142,8 @@ public class Controller {
 
                     // Validar que la celda objetivo es transitable y dentro del mapa
                     if (modelWorld.isValidPosition(row, col)) {
+                        model.clearMemory();
+                        model.resetEnergy();
                         // ✅ Actualizar modelo PRIMERO
                         model.setAgentPosition(row, col);
                         // ✅ Sincronizar vista flotante con modelo
@@ -166,6 +168,7 @@ public class Controller {
                     if (modelWorld.isValidPosition(row, col)) {
                         model.setGoalPosition(row, col);
                         view.setGoalDoublePos(row, col);
+                        
                     } else {
                         view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
                     }
@@ -328,9 +331,9 @@ public class Controller {
             view.setRunButtonSelected(false); // ✅ Visualmente desmarcar el botón  
         }
 
-        read_map(rutaArchivo);   // Carga y actualiza modelo
         model.resetEnergy();
         model.clearMemory();
+        read_map(rutaArchivo);   // Carga y actualiza modelo
         
         this.isRunning = false;  // Garantizar pausa (redundante si ya era falso, pero seguro)
 
