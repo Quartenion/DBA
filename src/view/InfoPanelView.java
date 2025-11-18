@@ -5,15 +5,15 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 
 /**
- * Panel lateral que muestra información del agente y controles.
+ * Panel lateral que muestra informacion del agente y controles.
  * Incluye:
  * - Nº de acciones realizadas
- * - Posición x,y del agente
- * - Posición x,y del objetivo
+ * - Posicion x,y del agente
+ * - Posicion x,y del objetivo
  * - Selector de mapas
  * - Boolean objetivo alcanzado
  * - Toggle buttons para mostrar diferentes vistas
- * - Log de últimas 5 acciones
+ * - Log de ultimas 5 acciones
  */
 public class InfoPanelView extends JPanel {
 
@@ -48,7 +48,7 @@ public class InfoPanelView extends JPanel {
         gbc.weightx = 1;
         gbc.gridx = 0;
 
-        // Sección de estado del agente
+        // Seccion de estado del agente
         JPanel statusPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         statusPanel.setBorder(BorderFactory.createTitledBorder("Estado Agente"));
         statusPanel.setBackground(new Color(235, 235, 250));
@@ -95,9 +95,9 @@ public class InfoPanelView extends JPanel {
         gbc.gridy++;
         add(viewsPanel, gbc);
 
-        // Log de últimas 5 acciones
+        // Log de ultimas 5 acciones
         JPanel logPanel = new JPanel(new BorderLayout());
-        logPanel.setBorder(BorderFactory.createTitledBorder("Últimas acciones"));
+        logPanel.setBorder(BorderFactory.createTitledBorder("Ultimas acciones"));
         logPanel.setBackground(new Color(255, 245, 245));
 
         logModel = new DefaultListModel<>();
@@ -120,7 +120,7 @@ public class InfoPanelView extends JPanel {
     }
 
     // ---------------------------
-    // Métodos para actualizar info
+    // Metodos para actualizar info
     // ---------------------------
 
     public void setActionsCount(int count) {

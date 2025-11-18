@@ -1,280 +1,216 @@
 package model;
 
 import jade.core.Agent;
-import jade.core.behaviours.DataStore;
 import jade.core.behaviours.TickerBehaviour;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Agente reactivo hibrido:
+ * 1. Busqueda greedy cuando se puede mover directamente hacia el objetivo
+ * 2. Seguimiento de paredes (algoritmo Bug) al encontrar un obstaculo
+ */
 public class AgentP2 extends Agent {
-    // Enviroment of the agent to store all the data
-    private Environment model;
-    // Time for the tickers
-    private final int ACTION_TIME = 1;
-    // private DataStore sharedDataStore; // DataStore compartido
+
+    private Environment world;
     
+    private final int ACTION_TIME = 10;
     
-    // Representation of the sensors of this agent NORTH, EAST, SOUTH, WEST
-    //                                             UP,  ,RIGHT, DOWN, LEFT
+    // Indices: 0:UP, 1:RIGHT, 2:DOWN, 3:LEFT
     private final ArrayList<RelativePos> sensors = new ArrayList<>(List.of(
-                                                    new RelativePos( -1,0),
-                                                    new RelativePos( 0, 1),
-                                                    new RelativePos( 1, 0),
-                                                    new RelativePos( 0,-1)
-                                                    ));
+        new RelativePos(-1, 0),
+        new RelativePos( 0, 1),
+        new RelativePos( 1, 0),
+        new RelativePos( 0,-1)
+    ));
     
     @Override
-    protected void setup(){
+    protected void setup() {
         Object[] args = getArguments();
         
         if (args != null && args.length > 0 && args[0] instanceof Environment) {
-            this.model = (Environment) args[0];
+            this.world = (Environment) args[0];
         } else {
-            throw new RuntimeException("Environment no proporcionado al agente");
+            throw new RuntimeException("El agente necesita una instancia de Environment como argumento");
         }
         
-        addBehaviour(new reactiveAgentBehaviour(this,ACTION_TIME));
+        addBehaviour(new ReactiveBehaviour(this, ACTION_TIME));
         
-        /*
-        !! DEPRECATED
-        // Crear un DataStore compartido para todos los behaviours
-        this.sharedDataStore = new DataStore();
-        
-        // Crear los behaviours con delays escalonados
-        SeeBehaviour seeBehaviour = new SeeBehaviour(this, ACTION_TIME);
-        ThinkBehaviour thinkBehaviour = new ThinkBehaviour(this, ACTION_TIME);
-        ActionBehaviour actionBehaviour = new ActionBehaviour(this, ACTION_TIME);
-        
-        // Asignar el mismo DataStore a todos
-        seeBehaviour.setDataStore(sharedDataStore);
-        thinkBehaviour.setDataStore(sharedDataStore);
-        actionBehaviour.setDataStore(sharedDataStore);
-         
-        
-        // Añadir los behaviours con delays para que se ejecuten en orden
-        addBehaviour(seeBehaviour);
-        addBehaviour(thinkBehaviour);
-        addBehaviour(actionBehaviour);
-        */
-        
-        System.out.println("=== Agente iniciado correctamente ===");
+        System.out.println("=== Agente " + getLocalName() + " iniciado ===");
     }
     
     @Override
-    public void takeDown(){
-        System.out.println("=== Terminando agente ===");
+    public void takeDown() {
+        System.out.println("=== Agente " + getLocalName() + " terminado ===");
     }
-    
-    public boolean isRunning(){
-        return this.model.isRunning();
-    }
-    
-    public void changeState(State s){
-        this.model.changeState(s);
-    }
-    
-    
-    
-    // Reemplaza toda la clase interna reactiveAgentBehaviour con esto:
-    class reactiveAgentBehaviour extends TickerBehaviour {
-        private int tickCount = 0;
         
-        // --- ESTADOS ---
+    public boolean isRunning() {
+        return this.world.isRunning();
+    }
+    
+    public void changeState(State estado) {
+        this.world.changeState(estado);
+    }
+    
+    //Comportamiento principal del agente
+    class ReactiveBehaviour extends TickerBehaviour {
+        
+        private int ticks = 0;
+        
+        // Modos de navegacion
         private enum Mode { GREEDY, WALL_FOLLOW }
         private Mode currentMode = Mode.GREEDY;
         
-        // Configuración Wall Follow
-        private int wallToFollow = -1;      // Dirección relativa del muro (0=UP, etc)
-        private boolean useLeftHand = true; // true=Mano Izq, false=Mano Der
+        // Variables para seguimiento de paredes
+        private int wallDirection = -1;      // Direccion relativa de la pared (0..3)
+        private boolean leftHand = true;     // Heuristica de mano izquierda/derecha
         
-        // Memoria del punto de choque
-        private double hitDistance = Double.MAX_VALUE; // Distancia al goal cuando chocamos
+        // Distancia al objetivo al momento de encontrar la pared
+        private double hitDistance = Double.MAX_VALUE; 
 
-        public reactiveAgentBehaviour(Agent a, long period){
-            super(a, period);
+        public ReactiveBehaviour(Agent agente, long period) {
+            super(agente, period);
         }
         
         @Override
-        public void onTick(){
+        public void onTick() {
             if (!((AgentP2) myAgent).isRunning()) return;
-            tickCount++;
             
-            // 1. PERCEPCIÓN
+            ticks++;
+            
+            // -----------------------------------------------------------------
+            // FASE DE PERCEPCION
+            // -----------------------------------------------------------------
             ((AgentP2) myAgent).changeState(State.SEE);
-            Map<RelativePos,Integer> perception = model.perceive(sensors);
-            int[] goalDir = model.getDirectionToGoal(); 
             
-            // Distancia Euclídea actual
+            Map<RelativePos, Integer> perception = world.perceive(sensors);
+            int[] goalDir = world.getDirectionToGoal(); 
+            
+            // Calculamos distancia euclidiana al objetivo
             double currentDist = Math.sqrt(Math.pow(goalDir[0], 2) + Math.pow(goalDir[1], 2));
 
-            // 2. PENSAMIENTO
+            // -----------------------------------------------------------------
+            // FASE DE DECISION (THINK)
+            // -----------------------------------------------------------------
             ((AgentP2) myAgent).changeState(State.THINK);
-            String decision = "BLOCKED";
-            String logMessage = "";
+            
+            String action = "BLOCKED";
+            String modeLog = "";
 
-            if (model.isGoalReached()) {
+            // Comprobamos si se ha alcanzado el objetivo
+            if (world.isGoalReached()) {
                 System.out.println("!!! OBJETIVO ALCANZADO !!!");
                 ((AgentP2) myAgent).changeState(State.STANDBY);
-                model.stop();
+                world.stop();
                 return;
             }
 
             switch (currentMode) {
                 case GREEDY:
-                    // Intentamos ir directo
+                    // Intentamos movernos directamente hacia el objetivo
                     String directMove = getDirectMove(goalDir, perception);
                     
                     if (directMove != null) {
-                        decision = directMove;
-                        logMessage = "GREEDY";
+                        action = directMove;
+                        modeLog = "GREEDY";
                     } else {
-                        // --- CHOQUE DETECTADO ---
+                        // Obstaculo detectado: activamos modo Wall Following
                         currentMode = Mode.WALL_FOLLOW;
-                        hitDistance = currentDist; // Guardamos referencia: "Tengo que mejorar esto"
+                        hitDistance = currentDist; // Guardamos distancia al impactar
                         
-                        // 1. ¿Dónde está el muro?
-                        wallToFollow = getBlockedDirection(goalDir);
+                        wallDirection = getBlockedDirection(goalDir);
+                        leftHand = decideHand(wallDirection, goalDir);
                         
-                        // 2. Decidir mano INTELIGENTE:
-                        // Si el objetivo está a mi derecha, uso mano IZQUIERDA (para ir hacia la derecha)
-                        // Si el objetivo está a mi izquierda, uso mano DERECHA
-                        useLeftHand = decideHand(wallToFollow, goalDir);
-                        
-                        // Primer movimiento de rodeo
-                        decision = followWallStrict(perception);
-                        logMessage = "HIT -> WALL_FOLLOW (" + (useLeftHand ? "L" : "R") + ")";
+                        action = followWall(perception);
+                        modeLog = "HIT -> WALL_FOLLOW (" + (leftHand ? "LEFT" : "RIGHT") + ")";
                     }
                     break;
 
                 case WALL_FOLLOW:
-                    // CONDICIÓN DE SALIDA:
-                    // 1. ¿Estamos más cerca que cuando empezamos a rodear este obstáculo?
-                    // 2. ¿Podemos movernos hacia el objetivo?
+                    // Podemos volver al modo GREEDY??
                     String tryDirect = getDirectMove(goalDir, perception);
                     
-                    // Usamos un margen de 1.0 para asegurar que realmente hemos avanzado
                     if (tryDirect != null && currentDist < (hitDistance - 0.5)) {
                         currentMode = Mode.GREEDY;
-                        decision = tryDirect;
-                        logMessage = "LEAVE WALL -> GREEDY";
+                        action = tryDirect;
+                        modeLog = "LEAVE WALL -> GREEDY";
                     } else {
-                        // SEGUIR PARED ESTRICTAMENTE (Geometría pura, sin memoria de visitas)
-                        decision = followWallStrict(perception);
-                        
-                        // Mini-fix: Si nos encerramos en un bucle infinito perfecto (raro pero posible),
-                        // aquí podrías añadir una comprobación de visitas > 10, pero 
-                        // normalmente el Bug Algorithm sale solo.
-                        logMessage = "WALL (" + (useLeftHand?"L":"R") + ")";
+                        // Seguimos rodeando la pared
+                        action = followWall(perception);
+                        modeLog = "WALL (" + (leftHand ? "LEFT" : "RIGHT") + ")";
                     }
                     break;
             }
 
-            System.out.println("[" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
+            // Debug
+            System.out.println("[" + ticks + "] " + modeLog + " | Dist: " + String.format("%.2f", currentDist));
 
-            // 3. ACCIÓN
-            if (!"BLOCKED".equals(decision)) {
-                int oldX = model.getAgentX();
-                int oldY = model.getAgentY();
-                model.moveAgent(decision);
-                if (oldX != model.getAgentX() || oldY != model.getAgentY()) {
-                    model.incrementEnergy();
+            // -----------------------------------------------------------------
+            // FASE DE ACCION
+            // -----------------------------------------------------------------
+            if (!"BLOCKED".equals(action)) {
+                int oldX = world.getAgentX();
+                int oldY = world.getAgentY();
+                
+                world.moveAgent(action);
+                
+                if (oldX != world.getAgentX() || oldY != world.getAgentY()) {
+                    world.incrementEnergy();
                 }
             }
+            
             ((AgentP2) myAgent).changeState(State.ACTION);
         }
 
-        // ------------------------------------------------------------------------
-        // LÓGICA DETERMINISTA
-        // ------------------------------------------------------------------------
+        // ---------------------------------------------------------------------
+        // METODOS AUXILIARES
+        // ---------------------------------------------------------------------
 
-        /**
-         * Decide qué mano usar para rodear el obstáculo más rápido.
-         * Lógica: Queremos ir "hacia" el objetivo rodeando el muro.
-         */
+        // Decide que mano usar para seguir la pared
         private boolean decideHand(int blockedDir, int[] goalDir) {
-            int dY = goalDir[0]; // Vertical (-Arriba, +Abajo)
-            int dX = goalDir[1]; // Horizontal (-Izquierda, +Derecha)
+            int dY = goalDir[0];
+            int dX = goalDir[1];
             
-            // blockedDir: 0:UP, 1:RIGHT, 2:DOWN, 3:LEFT
-            
-            // Ejemplo: Quiero ir UP (0) y choco.
-            if (blockedDir == 0) {
-                // Si el objetivo está a la derecha (dX > 0), quiero ir a la derecha.
-                // Poner la mano IZQUIERDA en el muro de arriba me hace caminar hacia la derecha.
-                if (dX >= 0) return true; // Left Hand
-                return false; // Right Hand
-            }
-            if (blockedDir == 2) { // DOWN
-                if (dX >= 0) return false; // Right Hand (Muro derecha -> voy derecha?? No, espera)
-                // Si miro abajo (muro), mano derecha en muro -> voy a la izquierda.
-                // Si goal está a la derecha, quiero ir izquierda? No.
-                // Si goal derecha, quiero ir derecha. Mano Izq en muro abajo -> voy derecha.
-                return true; // Left Hand
-            }
-            if (blockedDir == 1) { // RIGHT
-                // Goal Arriba (dY < 0). Mano Izq en muro derecha -> Voy arriba.
-                if (dY < 0) return true; 
-                return false;
-            }
-            if (blockedDir == 3) { // LEFT
-                // Goal Arriba (dY < 0). Mano Der en muro izquierda -> Voy arriba.
-                if (dY < 0) return false;
-                return true;
-            }
-            return true; // Default
+            if (blockedDir == 0) return dX >= 0;
+            if (blockedDir == 2) return dX < 0;
+            if (blockedDir == 1) return dY < 0;
+            if (blockedDir == 3) return dY >= 0;
+            return true;
         }
 
-        /**
-         * Sigue el muro geométricamente.
-         * NO mira celdas visitadas. Solo mira sensores.
-         */
-        private String followWallStrict(Map<RelativePos,Integer> perception) {
+        // Algoritmo de seguimiento estricto de paredes (solo sensores locales)
+        private String followWall(Map<RelativePos, Integer> perception) {
             String[] dirs = {"UP", "RIGHT", "DOWN", "LEFT"};
+            int turnOut = leftHand ? 3 : 1;
+            int turnIn  = leftHand ? 1 : 3;
             
-            // Definir giros según la mano
-            // Indice aumenta = Giro Derecha (Clockwise)
-            // Indice disminuye = Giro Izquierda (Counter-Clockwise)
-            
-            int turnOut = useLeftHand ? 3 : 1; // (-1) Girar hacia afuera (buscar hueco)
-            int turnIn  = useLeftHand ? 1 : 3; // (+1) Girar hacia adentro (chocamos)
-            
-            // 1. REGLA DEL HUECO (Esquina Convexa)
-            // Si la celda donde debería estar mi mano (wallToFollow) está LIBRE,
-            // significa que el muro se acabó o dobló. Debo girar y "abrazar" la esquina.
-            if (isFree(wallToFollow, perception)) {
-                // Moverse hacia el hueco
-                String move = dirs[wallToFollow];
-                // Actualizar referencia: Ahora el muro está "detrás" del giro relativo
-                wallToFollow = (wallToFollow + turnIn) % 4; 
+            // 1. Verificar apertura (esquina convexa)
+            if (isFree(wallDirection, perception)) {
+                String move = dirs[wallDirection];
+                wallDirection = (wallDirection + turnIn) % 4;
                 return move;
             }
             
-            // 2. REGLA DE AVANCE (Pared recta)
-            // Intentar avanzar paralelo al muro.
-            // Dirección de avance = Muro + 90 grados (hacia fuera de la mano)
-            int moveDir = (wallToFollow + turnOut) % 4;
+            // 2. Moverse paralelo a la pared
+            int moveDir = (wallDirection + turnOut) % 4;
+            if (isFree(moveDir, perception)) return dirs[moveDir];
             
-            if (isFree(moveDir, perception)) {
-                return dirs[moveDir];
-            }
-            
-            // 3. REGLA DEL CALLEJÓN (Esquina Cóncava)
-            // No puedo seguir la pared (hay muro enfrente).
-            // El obstáculo de enfrente se convierte en mi nuevo muro de referencia.
-            wallToFollow = moveDir; 
-            
-            // Devolvemos BLOCKED para rotar mentalmente en este tick.
+            // 3. Esquina ciega (concava)
+            wallDirection = moveDir;
             return "BLOCKED";
         }
 
-        // Helpers
-        private boolean isFree(int dirIndex, Map<RelativePos,Integer> perception) {
-            return perception.get(sensors.get(dirIndex)) == 0;
+        // Comprueba si una celda relativa esta libre
+        private boolean isFree(int index, Map<RelativePos, Integer> perception) {
+            return perception.get(sensors.get(index)) == 0;
         }
 
-        private String getDirectMove(int[] goalDir, Map<RelativePos,Integer> perception) {
-             int dY = goalDir[0]; int dX = goalDir[1];
+        // Movimiento greedy hacia el objetivo
+        private String getDirectMove(int[] goalDir, Map<RelativePos, Integer> perception) {
+            int dY = goalDir[0]; 
+            int dX = goalDir[1];
+            
             if (Math.abs(dY) >= Math.abs(dX)) {
                 if (dY < 0 && isFree(0, perception)) return "UP";
                 if (dY > 0 && isFree(2, perception)) return "DOWN";
@@ -289,8 +225,10 @@ public class AgentP2 extends Agent {
             return null;
         }
         
+        // Determina la direccion bloqueada respecto al objetivo
         private int getBlockedDirection(int[] goalDir) {
-             int dY = goalDir[0]; int dX = goalDir[1];
+            int dY = goalDir[0]; 
+            int dX = goalDir[1];
             if (Math.abs(dY) > Math.abs(dX)) return (dY < 0) ? 0 : 2;
             else return (dX > 0) ? 1 : 3;
         }

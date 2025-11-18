@@ -31,7 +31,7 @@ public class MatrixView extends JPanel {
     private void initMatrix() {
         int rows = this.matrix.getRows();
         int cols = this.matrix.getCols();
-        // Evitar división por cero si el mundo aún no está inicializado
+        // Evitar division por cero si el mundo aun no esta inicializado
         if (rows <= 0 || cols <= 0) {
             this.cellSize = 1; // valor por defecto seguro
         } else {
@@ -62,9 +62,9 @@ public class MatrixView extends JPanel {
                 
                 
                 // Prioridad de colores:
-                // 1. Obstáculos (negro)
-                // 2. Visitadas (amarillo claro) - si el toggle está activo
-                // 3. Vistas (azul muy claro) - si el toggle está activo
+                // 1. Obstaculos (negro)
+                // 2. Visitadas (amarillo claro) - si el toggle esta activo
+                // 3. Vistas (azul muy claro) - si el toggle esta activo
                 // 4. No exploradas (blanco)
                 
                 switch(matrix.getTile(i, j)){
@@ -92,12 +92,12 @@ public class MatrixView extends JPanel {
             }
         }
 
-        // ✅ Dibujar OBJETIVO (mejor como círculo centrado)
+        // ✅ Dibujar OBJETIVO (mejor como circulo centrado)
         g.setColor(Color.GREEN);
         g.fillRect((int)(goalDoubleY * cellSize), (int)(goalDoubleX * cellSize), 
                                                             cellSize, cellSize);
 
-        // ✅ Dibujar AGENTE (círculo centrado)
+        // ✅ Dibujar AGENTE (circulo centrado)
         g.setColor(Color.BLUE);
         int agentSize = cellSize - cellSize / 3;
         int agentX = (int)(agentDoubleY * cellSize + cellSize / 2 - agentSize / 2);
