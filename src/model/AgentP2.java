@@ -76,509 +76,223 @@ public class AgentP2 extends Agent {
     
     
     
+    // Reemplaza toda la clase interna reactiveAgentBehaviour con esto:
     class reactiveAgentBehaviour extends TickerBehaviour {
         private int tickCount = 0;
         
+        // --- ESTADOS ---
+        private enum Mode { GREEDY, WALL_FOLLOW }
+        private Mode currentMode = Mode.GREEDY;
+        
+        // Configuración Wall Follow
+        private int wallToFollow = -1;      // Dirección relativa del muro (0=UP, etc)
+        private boolean useLeftHand = true; // true=Mano Izq, false=Mano Der
+        
+        // Memoria del punto de choque
+        private double hitDistance = Double.MAX_VALUE; // Distancia al goal cuando chocamos
+
         public reactiveAgentBehaviour(Agent a, long period){
             super(a, period);
         }
         
-        
-        //-BEHAVIOUR------------------------------------------------------------
         @Override
         public void onTick(){
+            if (!((AgentP2) myAgent).isRunning()) return;
             tickCount++;
             
-            // If its stopped
-            if (!((AgentP2) myAgent).isRunning()){
-                return;
-            }
-            
-            //-SEE--------------------------------------------------------------
-            // The controller will detect the change to edit the UI
+            // 1. PERCEPCIÓN
             ((AgentP2) myAgent).changeState(State.SEE);
-            
-            
-            // Method percieve -> Stores the info in the Enviroment
             Map<RelativePos,Integer> perception = model.perceive(sensors);
-            int [] goalDirection = model.getDirectionToGoal();
+            int[] goalDir = model.getDirectionToGoal(); 
             
-            
-            //-THINK------------------------------------------------------------
-            // The controller will detect the change to edit the UI
+            // Distancia Euclídea actual
+            double currentDist = Math.sqrt(Math.pow(goalDir[0], 2) + Math.pow(goalDir[1], 2));
+
+            // 2. PENSAMIENTO
             ((AgentP2) myAgent).changeState(State.THINK);
-            
-            
-            String decision = "";
-            // Comprobar si ya llegamos al objetivo
+            String decision = "BLOCKED";
+            String logMessage = "";
+
             if (model.isGoalReached()) {
-                System.out.println("[" + tickCount + "] THINK - OBJETIVO ALCANZADO!");
-                System.out.println("[" + tickCount + "] ACTION - Agente detenido - Objetivo alcanzado");
-                System.out.println(">>> Energia total consumida: " + model.getEnergyUsed());
+                System.out.println("!!! OBJETIVO ALCANZADO !!!");
                 ((AgentP2) myAgent).changeState(State.STANDBY);
                 model.stop();
-            }
-            else{
-                // Consultar memoria de celdas visitadas
-                boolean[] visited = model.getVisitedDirections();
-                int[] visitCounts = model.getVisitCounts();
-
-                 // ESTRATEGIA CON PRIORIDADES
-                decision = decideMovementWithMemory(perception, goalDirection, visited, visitCounts);
-                System.out.println("[" + tickCount + "] THINK - Decision final: " + decision);
-            }
-            
-            
-            //-ACTION-----------------------------------------------------------
-            if ("BLOCKED".equals(decision)) {
-                System.out.println("[" + tickCount + "] ACTION - BLOQUEADO - No hay movimientos validos!");
-                ((AgentP2) myAgent).changeState(State.STANDBY);
                 return;
             }
-            
-            
-            int oldX = model.getAgentX();
-            int oldY = model.getAgentY();
-            // Ejecutar movimiento a través del entorno
-            model.moveAgent(decision);
-            
-            if (oldX != model.getAgentX() || oldY != model.getAgentY()) {
-                model.incrementEnergy();
-                System.out.println("[" + tickCount + "] ACTION - Ejecutado: " + decision + 
-                                 " | Energia: " + model.getEnergyUsed());
-            } else {
-                System.out.println("[" + tickCount + "] ACTION - FALLO: " + decision);
-            }
-            
-            
-            
-            if (model.isGoalReached()){
-            }
-            
-            // The controller will detect the change to edit the UI
-            ((AgentP2) myAgent).changeState(State.ACTION);
 
-        }
-        
-        
-        
-        //-HEURISTICA-----------------------------------------------------------
-        /**
-         * Decide el mejor movimiento considerando:
-         * 1. Dirección del objetivo
-         * 2. Celdas visitadas (evitarlas si es posible)
-         * 3. Backtracking inteligente si es necesario
-         */
-        private String decideMovementWithMemory(Map<RelativePos,Integer> perception, int[] goalDirection, 
-                                               boolean[] visited, int[] visitCounts) {
-
-            // PRIORIDAD 1: Intentar ir directo al objetivo por celda NO visitada
-            String directMove = tryDirectUnvisitedMove(perception, goalDirection, visited);
-            if (directMove != null) {
-                System.out.println("   -> Estrategia: Movimiento directo no visitado");
-                return directMove;
-            }
-
-            // PRIORIDAD 2: Explorar celdas NO visitadas (aunque no sea directo al objetivo)
-            String unexploredMove = tryUnexploredMove(perception, visited);
-            if (unexploredMove != null) {
-                System.out.println("   -> Estrategia: Exploracion de celda nueva");
-                return unexploredMove;
-            }
-
-            // PRIORIDAD 3: Backtracking - ir a la celda menos visitada
-            String backtrackMove = tryBacktracking(perception, visited, visitCounts);
-            if (backtrackMove != null) {
-                System.out.println("   -> Estrategia: Backtracking (celda menos visitada)");
-                return backtrackMove;
-            }
-
-            // PRIORIDAD 4: Completamente bloqueado
-            System.out.println("   -> Estrategia: BLOQUEADO - Sin opciones");
-            return "BLOCKED";
-        }
-        
-
-        /**
-         * ESTRATEGIA 1: Intenta moverse directo al objetivo por celda no visitada
-         */
-        private String tryDirectUnvisitedMove(Map<RelativePos,Integer> perception, 
-                                        int[] goalDirection, boolean[] visited) {
-            // Priorizar movimiento en filas (vertical)
-            if (goalDirection[0] < 0 && perception.get(sensors.get(0)) == 0 && !visited[0]) {
-                return "UP";
-            }
-            if (goalDirection[0] > 0 && perception.get(sensors.get(2)) == 0 && !visited[2]) {
-                return "DOWN";
-            }
-
-            // Luego movimiento en columnas (horizontal)
-            if (goalDirection[1] < 0 && perception.get(sensors.get(3)) == 0 && !visited[3]) {
-                return "LEFT";
-            }
-            if (goalDirection[1] > 0 && perception.get(sensors.get(1)) == 0 && !visited[1]) {
-                return "RIGHT";
-            }
-
-            return null; // No hay camino directo no visitado
-        }
-
-        /**
-         * ESTRATEGIA 2: Explora cualquier celda NO visitada
-         * (Útil cuando el camino directo está bloqueado pero hay alternativas)
-         */
-        private String tryUnexploredMove(Map<RelativePos,Integer> perception, 
-                                                boolean[] visited) {
-            String[] directions = {"UP", "RIGHT", "DOWN", "LEFT"};
-
-            for (int i = 0; i < 4; i++) {
-                if (perception.get(sensors.get(i)) == 0 && !visited[i]) {
-                    return directions[i];
-                }
-            }
-
-            return null; // Todas las celdas libres ya fueron visitadas
-        }
-
-        /**
-         * ESTRATEGIA 3: Backtracking - elige la celda MENOS visitada
-         * (Para salir de callejones sin salida)
-         */
-        private String tryBacktracking(Map<RelativePos,Integer>
-                            perception, boolean[] visited, int[] visitCounts) {
-            String[] directions = {"UP", "RIGHT", "DOWN", "LEFT"};
-
-            String bestDirection = null;
-            int minVisits = Integer.MAX_VALUE;
-
-            for (int i = 0; i < 4; i++) {
-                // Solo considerar celdas libres
-                if (perception.get(sensors.get(i)) == 0) {
-                    if (visitCounts[i] < minVisits) {
-                        minVisits = visitCounts[i];
-                        bestDirection = directions[i];
+            switch (currentMode) {
+                case GREEDY:
+                    // Intentamos ir directo
+                    String directMove = getDirectMove(goalDir, perception);
+                    
+                    if (directMove != null) {
+                        decision = directMove;
+                        logMessage = "GREEDY";
+                    } else {
+                        // --- CHOQUE DETECTADO ---
+                        currentMode = Mode.WALL_FOLLOW;
+                        hitDistance = currentDist; // Guardamos referencia: "Tengo que mejorar esto"
+                        
+                        // 1. ¿Dónde está el muro?
+                        wallToFollow = getBlockedDirection(goalDir);
+                        
+                        // 2. Decidir mano INTELIGENTE:
+                        // Si el objetivo está a mi derecha, uso mano IZQUIERDA (para ir hacia la derecha)
+                        // Si el objetivo está a mi izquierda, uso mano DERECHA
+                        useLeftHand = decideHand(wallToFollow, goalDir);
+                        
+                        // Primer movimiento de rodeo
+                        decision = followWallStrict(perception);
+                        logMessage = "HIT -> WALL_FOLLOW (" + (useLeftHand ? "L" : "R") + ")";
                     }
-                }
-            }
+                    break;
 
-            if (bestDirection != null) {
-                System.out.println("   -> Backtracking: eligiendo " + bestDirection + 
-                                 " (visitada " + minVisits + " veces)");
-            }
-
-            return bestDirection;
-        }
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    // !! DEPRECATED
-    //-------------------------------------------------------
-    // COMPORTAMIENTO 1: VER (cada 2 segundos)
-    //-------------------------------------------------------
-    /*
-    {
-    
-    class SeeBehaviour extends TickerBehaviour {
-        
-        private int tickCount = 0;
-        
-        public SeeBehaviour(Agent a, long period){
-            super(a, period);
-        }
-        
-        @Override
-        public void onTick(){
-            tickCount++;
-            
-            // If its stopped
-            if (!((AgentP2) myAgent).isRunning()) {
-                return; 
-            }
-            
-            // The controller will detect the change to edit the UI
-            ((AgentP2) myAgent).changeState(State.SEE);
-            
-            // Method percieve -> Stores the info in the Enviroment
-            Map<RelativePos,Integer> perception = model.perceive(sensors);
-            int [] goalDirection = model.getDirectionToGoal();
-            
-                
-            // Almacenar en datastore compartido
-            getDataStore().put("perception", perception);
-            getDataStore().put("seeComplete", true);
-            getDataStore().put("goalDirection", goalDirection);
-            
-            
-            /*
-            TODO: revisar -> no entiendo mucho el proposito de esto
-            System.out.println("\n[" + tickCount + "] SEE - Percepcion:");
-            System.out.println("   UP:" + (perception[0] == 0 ? "OK" : "XX") + 
-                             " DOWN:" + (perception[1] == 0 ? "OK" : "XX") + 
-                             " LEFT:" + (perception[2] == 0 ? "OK" : "XX") + 
-                             " RIGHT:" + (perception[3] == 0 ? "OK" : "XX"));
-            System.out.println("   Distancia objetivo: DX=" + goalDirection[0] + ", DY=" + goalDirection[1]);
-            */
-           /*
-        }
-    }
-    */
-    
-    /*
-    //-------------------------------------------------------
-    // COMPORTAMIENTO 2: PENSAR (cada 2 segundos)
-    // Estrategia mejorada con memoria de celdas visitadas
-    //-------------------------------------------------------
-    class ThinkBehaviour extends TickerBehaviour {
-        
-        private int tickCount = 0;
-
-        public ThinkBehaviour(Agent a, long period){
-            super(a, period);
-        }
-
-        @Override
-        public void onTick(){
-            tickCount++;
-            // If its stopped
-            if (!((AgentP2) myAgent).isRunning()) {
-                return;
-            }
-            
-            // The controller will detect the change to edit the UI
-            ((AgentP2) myAgent).changeState(State.THINK);
-           
-            // Esperar a que See haya completado
-            Boolean seeComplete = (Boolean) getDataStore().get("seeComplete");
-            if (seeComplete == null || !seeComplete) {
-                return;
-            }
-            // Evitamos que si este ticker llegase a ejecucion de nuevo sin el resto
-            // terminar el ciclo, no se llegue a repetir de nuevo
-            getDataStore().put("seeComplete", false);
-            
-            // Obtener percepción del datastore
-            Map<RelativePos,Integer> perception = 
-                     (Map<RelativePos,Integer>) getDataStore().get("perception");
-            
-            
-            int[] goalDirection = (int[]) getDataStore().get("goalDirection");
-
-            if (perception == null || goalDirection == null) {
-                System.out.println("[" + tickCount + "] THINK - Esperando datos de percepcion...");
-                return;
-            }
-
-            // Comprobar si ya llegamos al objetivo
-            if (goalDirection[0] == 0 && goalDirection[1] == 0) {
-                System.out.println("[" + tickCount + "] THINK - OBJETIVO ALCANZADO!");
-                getDataStore().put("decision", "STOP");
-                getDataStore().put("thinkComplete", true);
-                return;
-            }
-
-            // Consultar memoria de celdas visitadas
-            boolean[] visited = model.getVisitedDirections();
-            int[] visitCounts = model.getVisitCounts();
-
-            
-            System.out.println("[" + tickCount + "] THINK - Analizando opciones:");
-            System.out.println("   Percepcion: UP=" + (perception[0] == 0 ? "Libre" : "Bloq") + 
-                             " DOWN=" + (perception[1] == 0 ? "Libre" : "Bloq") + 
-                             " LEFT=" + (perception[2] == 0 ? "Libre" : "Bloq") + 
-                             " RIGHT=" + (perception[3] == 0 ? "Libre" : "Bloq"));
-            System.out.println("   Visitadas:  UP=" + visited[0] + 
-                             " DOWN=" + visited[1] + 
-                             " LEFT=" + visited[2] + 
-                             " RIGHT=" + visited[3]);
-            
-            
-            // ESTRATEGIA CON PRIORIDADES
-            String decision = decideMovementWithMemory(perception, goalDirection, visited, visitCounts);
-
-            getDataStore().put("decision", decision);
-            getDataStore().put("thinkComplete", true);
-            
-            System.out.println("[" + tickCount + "] THINK - Decision final: " + decision);
-        }
-            
-        private String decideMovementWithMemory(Map<RelativePos,Integer> perception, int[] goalDirection, 
-                                               boolean[] visited, int[] visitCounts) {
-
-            // PRIORIDAD 1: Intentar ir directo al objetivo por celda NO visitada
-            String directMove = tryDirectUnvisitedMove(perception, goalDirection, visited);
-            if (directMove != null) {
-                System.out.println("   -> Estrategia: Movimiento directo no visitado");
-                return directMove;
-            }
-
-            // PRIORIDAD 2: Explorar celdas NO visitadas (aunque no sea directo al objetivo)
-            String unexploredMove = tryUnexploredMove(perception, visited);
-            if (unexploredMove != null) {
-                System.out.println("   -> Estrategia: Exploracion de celda nueva");
-                return unexploredMove;
-            }
-
-            // PRIORIDAD 3: Backtracking - ir a la celda menos visitada
-            String backtrackMove = tryBacktracking(perception, visited, visitCounts);
-            if (backtrackMove != null) {
-                System.out.println("   -> Estrategia: Backtracking (celda menos visitada)");
-                return backtrackMove;
-            }
-
-            // PRIORIDAD 4: Completamente bloqueado
-            System.out.println("   -> Estrategia: BLOQUEADO - Sin opciones");
-            return "BLOCKED";
-        }
-        
-
-        private String tryDirectUnvisitedMove(Map<RelativePos,Integer> perception, 
-                                        int[] goalDirection, boolean[] visited) {
-            // Priorizar movimiento en filas (vertical)
-            if (goalDirection[0] < 0 && perception.get(sensors.get(0)) == 0 && !visited[0]) {
-                return "UP";
-            }
-            if (goalDirection[0] > 0 && perception.get(sensors.get(2)) == 0 && !visited[1]) {
-                return "DOWN";
-            }
-
-            // Luego movimiento en columnas (horizontal)
-            if (goalDirection[1] < 0 && perception.get(sensors.get(3)) == 0 && !visited[2]) {
-                return "LEFT";
-            }
-            if (goalDirection[1] > 0 && perception.get(sensors.get(1)) == 0 && !visited[3]) {
-                return "RIGHT";
-            }
-
-            return null; // No hay camino directo no visitado
-        }
-
-        private String tryUnexploredMove(Map<RelativePos,Integer> perception, 
-                                                boolean[] visited) {
-            String[] directions = {"UP", "RIGHT", "DOWN", "LEFT"};
-
-            for (int i = 0; i < 4; i++) {
-                if (perception.get(sensors.get(i)) == 0 && !visited[i]) {
-                    return directions[i];
-                }
-            }
-
-            return null; // Todas las celdas libres ya fueron visitadas
-        }
-
-        private String tryBacktracking(Map<RelativePos,Integer>
-                            perception, boolean[] visited, int[] visitCounts) {
-            String[] directions = {"UP", "RIGHT", "DOWN", "LEFT"};
-
-            String bestDirection = null;
-            int minVisits = Integer.MAX_VALUE;
-
-            for (int i = 0; i < 4; i++) {
-                // Solo considerar celdas libres
-                if (perception.get(sensors.get(i)) == 0) {
-                    if (visitCounts[i] < minVisits) {
-                        minVisits = visitCounts[i];
-                        bestDirection = directions[i];
+                case WALL_FOLLOW:
+                    // CONDICIÓN DE SALIDA:
+                    // 1. ¿Estamos más cerca que cuando empezamos a rodear este obstáculo?
+                    // 2. ¿Podemos movernos hacia el objetivo?
+                    String tryDirect = getDirectMove(goalDir, perception);
+                    
+                    // Usamos un margen de 1.0 para asegurar que realmente hemos avanzado
+                    if (tryDirect != null && currentDist < (hitDistance - 0.5)) {
+                        currentMode = Mode.GREEDY;
+                        decision = tryDirect;
+                        logMessage = "LEAVE WALL -> GREEDY";
+                    } else {
+                        // SEGUIR PARED ESTRICTAMENTE (Geometría pura, sin memoria de visitas)
+                        decision = followWallStrict(perception);
+                        
+                        // Mini-fix: Si nos encerramos en un bucle infinito perfecto (raro pero posible),
+                        // aquí podrías añadir una comprobación de visitas > 10, pero 
+                        // normalmente el Bug Algorithm sale solo.
+                        logMessage = "WALL (" + (useLeftHand?"L":"R") + ")";
                     }
+                    break;
+            }
+
+            System.out.println("[" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
+
+            // 3. ACCIÓN
+            if (!"BLOCKED".equals(decision)) {
+                int oldX = model.getAgentX();
+                int oldY = model.getAgentY();
+                model.moveAgent(decision);
+                if (oldX != model.getAgentX() || oldY != model.getAgentY()) {
+                    model.incrementEnergy();
                 }
             }
-
-            if (bestDirection != null) {
-                System.out.println("   -> Backtracking: eligiendo " + bestDirection + 
-                                 " (visitada " + minVisits + " veces)");
-            }
-
-            return bestDirection;
-        }
-    }
-
-    
-    //-------------------------------------------------------
-    // COMPORTAMIENTO 3: ACTUAR (cada 2 segundos)
-    //-------------------------------------------------------
-    class ActionBehaviour extends TickerBehaviour {
-        
-        private int tickCount = 0;
-        
-        public ActionBehaviour(Agent a, long period){
-            super(a, period);
-        }
-        
-        @Override
-        public void onTick(){
-            tickCount++;
-            // If its stopped
-            if (!((AgentP2) myAgent).isRunning()) {
-                return; 
-            }
-            
-            
-            // Esperar a que Think haya completado
-            Boolean thinkComplete = (Boolean) getDataStore().get("thinkComplete");
-            if (thinkComplete == null || !thinkComplete) {
-                return;
-            }
-            
-            String decision = (String) getDataStore().get("decision");
-            
-            if (decision == null) {
-                System.out.println("[" + tickCount + "] ACTION - Sin decision aun");
-                return;
-            }
-            
-            getDataStore().put("thinkComplete", false);
-            
-            
-            if ("STOP".equals(decision)) {
-                System.out.println("[" + tickCount + "] ACTION - Agente detenido - Objetivo alcanzado");
-                System.out.println(">>> Energia total consumida: " + model.getEnergyUsed());
-                // Limpiar flags
-                getDataStore().remove("seeComplete");
-                getDataStore().remove("thinkComplete");
-                return;
-            }
-            
-            if ("BLOCKED".equals(decision)) {
-                System.out.println("[" + tickCount + "] ACTION - BLOQUEADO - No hay movimientos validos!");
-                getDataStore().remove("seeComplete");
-                getDataStore().remove("thinkComplete");
-                return;
-            }
-            
-            
-            int oldX = model.getAgentX();
-            int oldY = model.getAgentY();
-            // Ejecutar movimiento a través del entorno
-            model.moveAgent(decision);
-            
-            if (oldX != model.getAgentX() || oldY != model.getAgentY()) {
-                model.incrementEnergy();
-                System.out.println("[" + tickCount + "] ACTION - Ejecutado: " + decision + 
-                                 " | Energia: " + model.getEnergyUsed());
-            } else {
-                System.out.println("[" + tickCount + "] ACTION - FALLO: " + decision);
-            }
-            
-            // Limpiar flags para el siguiente ciclo
-            getDataStore().remove("seeComplete");
-            getDataStore().remove("thinkComplete");
-            
-            
-            if (model.isGoalReached()){
-                ((AgentP2) myAgent).changeState(State.STANDBY);
-                model.stop();
-            }
-            
-            // The controller will detect the change to edit the UI
             ((AgentP2) myAgent).changeState(State.ACTION);
         }
+
+        // ------------------------------------------------------------------------
+        // LÓGICA DETERMINISTA
+        // ------------------------------------------------------------------------
+
+        /**
+         * Decide qué mano usar para rodear el obstáculo más rápido.
+         * Lógica: Queremos ir "hacia" el objetivo rodeando el muro.
+         */
+        private boolean decideHand(int blockedDir, int[] goalDir) {
+            int dY = goalDir[0]; // Vertical (-Arriba, +Abajo)
+            int dX = goalDir[1]; // Horizontal (-Izquierda, +Derecha)
+            
+            // blockedDir: 0:UP, 1:RIGHT, 2:DOWN, 3:LEFT
+            
+            // Ejemplo: Quiero ir UP (0) y choco.
+            if (blockedDir == 0) {
+                // Si el objetivo está a la derecha (dX > 0), quiero ir a la derecha.
+                // Poner la mano IZQUIERDA en el muro de arriba me hace caminar hacia la derecha.
+                if (dX >= 0) return true; // Left Hand
+                return false; // Right Hand
+            }
+            if (blockedDir == 2) { // DOWN
+                if (dX >= 0) return false; // Right Hand (Muro derecha -> voy derecha?? No, espera)
+                // Si miro abajo (muro), mano derecha en muro -> voy a la izquierda.
+                // Si goal está a la derecha, quiero ir izquierda? No.
+                // Si goal derecha, quiero ir derecha. Mano Izq en muro abajo -> voy derecha.
+                return true; // Left Hand
+            }
+            if (blockedDir == 1) { // RIGHT
+                // Goal Arriba (dY < 0). Mano Izq en muro derecha -> Voy arriba.
+                if (dY < 0) return true; 
+                return false;
+            }
+            if (blockedDir == 3) { // LEFT
+                // Goal Arriba (dY < 0). Mano Der en muro izquierda -> Voy arriba.
+                if (dY < 0) return false;
+                return true;
+            }
+            return true; // Default
+        }
+
+        /**
+         * Sigue el muro geométricamente.
+         * NO mira celdas visitadas. Solo mira sensores.
+         */
+        private String followWallStrict(Map<RelativePos,Integer> perception) {
+            String[] dirs = {"UP", "RIGHT", "DOWN", "LEFT"};
+            
+            // Definir giros según la mano
+            // Indice aumenta = Giro Derecha (Clockwise)
+            // Indice disminuye = Giro Izquierda (Counter-Clockwise)
+            
+            int turnOut = useLeftHand ? 3 : 1; // (-1) Girar hacia afuera (buscar hueco)
+            int turnIn  = useLeftHand ? 1 : 3; // (+1) Girar hacia adentro (chocamos)
+            
+            // 1. REGLA DEL HUECO (Esquina Convexa)
+            // Si la celda donde debería estar mi mano (wallToFollow) está LIBRE,
+            // significa que el muro se acabó o dobló. Debo girar y "abrazar" la esquina.
+            if (isFree(wallToFollow, perception)) {
+                // Moverse hacia el hueco
+                String move = dirs[wallToFollow];
+                // Actualizar referencia: Ahora el muro está "detrás" del giro relativo
+                wallToFollow = (wallToFollow + turnIn) % 4; 
+                return move;
+            }
+            
+            // 2. REGLA DE AVANCE (Pared recta)
+            // Intentar avanzar paralelo al muro.
+            // Dirección de avance = Muro + 90 grados (hacia fuera de la mano)
+            int moveDir = (wallToFollow + turnOut) % 4;
+            
+            if (isFree(moveDir, perception)) {
+                return dirs[moveDir];
+            }
+            
+            // 3. REGLA DEL CALLEJÓN (Esquina Cóncava)
+            // No puedo seguir la pared (hay muro enfrente).
+            // El obstáculo de enfrente se convierte en mi nuevo muro de referencia.
+            wallToFollow = moveDir; 
+            
+            // Devolvemos BLOCKED para rotar mentalmente en este tick.
+            return "BLOCKED";
+        }
+
+        // Helpers
+        private boolean isFree(int dirIndex, Map<RelativePos,Integer> perception) {
+            return perception.get(sensors.get(dirIndex)) == 0;
+        }
+
+        private String getDirectMove(int[] goalDir, Map<RelativePos,Integer> perception) {
+             int dY = goalDir[0]; int dX = goalDir[1];
+            if (Math.abs(dY) >= Math.abs(dX)) {
+                if (dY < 0 && isFree(0, perception)) return "UP";
+                if (dY > 0 && isFree(2, perception)) return "DOWN";
+                if (dX < 0 && isFree(3, perception)) return "LEFT";
+                if (dX > 0 && isFree(1, perception)) return "RIGHT";
+            } else {
+                if (dX < 0 && isFree(3, perception)) return "LEFT";
+                if (dX > 0 && isFree(1, perception)) return "RIGHT";
+                if (dY < 0 && isFree(0, perception)) return "UP";
+                if (dY > 0 && isFree(2, perception)) return "DOWN";
+            }
+            return null;
+        }
         
+        private int getBlockedDirection(int[] goalDir) {
+             int dY = goalDir[0]; int dX = goalDir[1];
+            if (Math.abs(dY) > Math.abs(dX)) return (dY < 0) ? 0 : 2;
+            else return (dX > 0) ? 1 : 3;
+        }
     }
-    }
-    */
 }
