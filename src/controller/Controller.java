@@ -381,8 +381,8 @@ public class Controller {
             // Actualizar modelo físico
             this.modelWorld.changeMap(newMap, rows, cols);
             // Reiniciar posiciones en modelo lógico
-            this.model.setAgentPosition(rows - 1, cols - 1);
-            this.model.setGoalPosition(0, 0);
+            this.model.setAgentPosition(47,49);
+            this.model.setGoalPosition(49,15);
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
