@@ -211,7 +211,6 @@ public class AgentP2 extends Agent {
             if (goalDirection[0] > 0 && perception.get(sensors.get(2)) == 0 && !visited[2]) {
                 return "DOWN";
             }
-
             // Luego movimiento en columnas (horizontal)
             if (goalDirection[1] < 0 && perception.get(sensors.get(3)) == 0 && !visited[3]) {
                 return "LEFT";
