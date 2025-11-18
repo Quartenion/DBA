@@ -3,6 +3,8 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseListener;       // Import necesario
+import java.awt.event.MouseMotionListener; // Import necesario
 import model.Environment;
 import model.WorldViewInterface;
 
@@ -13,24 +15,18 @@ public class MainView extends JFrame {
     
     public MainView(WorldViewInterface world, Environment model) {
         setTitle("Simulacion de Mundo - Agente");
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); 
         setLayout(new BorderLayout());
-        // Inicializacion inicial
         initComponents(world, model);
     }
     
-    /**
-     * Inicializa la interfaz completa (solo al inicio).
-     * @param world
-     * @param model
-     */
     public void initComponents(WorldViewInterface world, Environment model) {
         if (this.matrixPanel != null) remove(this.matrixPanel);
         if (this.infoPanel != null)   remove(this.infoPanel);
         
+        // Creamos los paneles UNA sola vez
         this.matrixPanel = new MatrixView(world, model);
         this.infoPanel = new InfoPanelView();
-        
         
         add(this.matrixPanel, BorderLayout.CENTER);
         add(this.infoPanel, BorderLayout.EAST);
@@ -40,108 +36,80 @@ public class MainView extends JFrame {
     }
     
     /**
-     * Reinicia SOLO la vista del mapa (conserva InfoPanelView y sus listeners).
-     * @param world
+     * Actualiza la vista. YA NO DESTRUYE EL PANEL.
+     * Al mantener el mismo objeto JPanel, conservamos los MouseListeners.
      */
     public void resetMapView(WorldViewInterface world, Environment model) {
+        // Como MatrixView lee del 'world' por referencia, 
+        // solo necesitamos forzar el repintado y revalidado.
         if (this.matrixPanel != null) {
-            remove(this.matrixPanel);
+            this.matrixPanel.revalidate();
+            this.matrixPanel.repaint();
         }
-        this.matrixPanel = new MatrixView(world, model);
-        add(this.matrixPanel, BorderLayout.CENTER);
-        revalidate();
-        repaint();
     }
     
-    // Setters delegados
-    public void setAgentDoublePos(double x, double y) {
-        this.matrixPanel.setAgentDoublePos(x, y);
-    }
-    
-    public void setGoalDoublePos(double x, double y) {
-        this.matrixPanel.setGoalDoublePos(x, y);
-    }
-    
-    public void addLogEntry(String log) {
-        this.infoPanel.addLogEntry(log);
-    }
-    
-    public void setGoalReached(boolean reached) {
-        this.infoPanel.setGoalReached(reached);
-    }
-    
-    public void setActionsCount(int energy) {
-        this.infoPanel.setActionsCount(energy);
-    }
-    
-    public void setAgentPosition(int x, int y) {
-        this.infoPanel.setAgentPosition(x, y);
-    }
-    
-    public void setGoalPosition(int x, int y) {
-        this.infoPanel.setGoalPosition(x, y);
-    }
-    
-    public void addShowVisitedListener(ActionListener listener) {
-        this.infoPanel.addShowVisitedListener(listener);
+    /**
+     * Resetea todos los botones y la visualización a su estado inicial (false).
+     */
+    public void resetToggles() {
+        // 1. Resetear botones visuales (InfoPanel)
+        if (infoPanel != null) {
+            infoPanel.setRunButtonSelected(false);
+            infoPanel.setShowVisitedSelected(false);
+            infoPanel.setShowMemorySelected(false);
+        }
+
+        // 2. Resetear lógica de pintado (MatrixView)
+        if (matrixPanel != null) {
+            matrixPanel.setShowVisited(false);
+            matrixPanel.setShowMemory(false);
+        }
     }
 
-    public void addShowMemoryListener(ActionListener listener) {
-        this.infoPanel.addShowMemoryListener(listener);
+    // === NUEVOS MÉTODOS PARA ARREGLAR EL CLICK ===
+    // Delegamos los listeners directamente al PANEL DE DIBUJO, no a la ventana.
+    // Esto hace que (0,0) sea la esquina del mapa, ignorando la barra de titulo.
+    public void addMapMouseListener(MouseListener l) {
+        if (matrixPanel != null) matrixPanel.addMouseListener(l);
+    }
+
+    public void addMapMouseMotionListener(MouseMotionListener l) {
+        if (matrixPanel != null) matrixPanel.addMouseMotionListener(l);
     }
     
-    // Getters
+    // Delegados de coordenadas
+    public void setAgentDoublePos(double row, double col) {
+        this.matrixPanel.setAgentVisualPos(row, col);
+    }
+    
+    public void setGoalDoublePos(double row, double col) {
+        this.matrixPanel.setGoalVisualPos(row, col);
+    }
+    
+    public double getAgentDoubleRow() { return matrixPanel.getAgentDoubleRow(); }
+    public double getAgentDoubleCol() { return matrixPanel.getAgentDoubleCol(); }
+    
+    public double getGoalDoubleRow() { return matrixPanel.getGoalDoubleRow(); }
+    public double getGoalDoubleCol() { return matrixPanel.getGoalDoubleCol(); }
+    
     public int getCellSize() {
         return matrixPanel.getCellSize();
     }
+
+    // --- Delegados al InfoPanel ---
+    public void addLogEntry(String log) { this.infoPanel.addLogEntry(log); }
+    public void setGoalReached(boolean reached) { this.infoPanel.setGoalReached(reached); }
+    public void setActionsCount(int energy) { this.infoPanel.setActionsCount(energy); }
+    public void setAgentPosition(int x, int y) { this.infoPanel.setAgentPosition(x, y); }
+    public void setGoalPosition(int x, int y) { this.infoPanel.setGoalPosition(x, y); }
+    public void addShowVisitedListener(ActionListener l) { this.infoPanel.addShowVisitedListener(l); }
+    public void addShowMemoryListener(ActionListener l) { this.infoPanel.addShowMemoryListener(l); }
+    public void setMapList(String[] maps) { if (infoPanel != null) infoPanel.setMapList(maps); }
+    public void addMapSelectorListener(ActionListener l) { if (infoPanel != null) infoPanel.addMapSelectorListener(l); }
+    public String getSelectedMap() { return (infoPanel != null) ? infoPanel.getSelectedMap() : null; }
+    public void addRunListener(ActionListener l) { if (infoPanel != null) infoPanel.addRunListener(l); }
+    public void setRunButtonSelected(boolean s) { if (infoPanel != null) infoPanel.setRunButtonSelected(s); }
     
-    public double getAgentDoubleX() {
-        return matrixPanel.getAgentDoubleX();
-    }
-    
-    public double getAgentDoubleY() {
-        return matrixPanel.getAgentDoubleY();
-    }
-    
-    public double getGoalDoubleX() {
-        return matrixPanel.getGoalDoubleX();
-    }
-    
-    public double getGoalDoubleY() {
-        return matrixPanel.getGoalDoubleY();
-    }
-    
-    // Delegacion para el selector de mapas (encapsulacion)
-    public void setMapList(String[] maps) {
-        if (infoPanel != null) infoPanel.setMapList(maps);
-    }
-    
-    public void addMapSelectorListener(ActionListener listener) {
-        if (infoPanel != null) infoPanel.addMapSelectorListener(listener);
-    }
-    
-    public String getSelectedMap() {
-        return (infoPanel != null) ? infoPanel.getSelectedMap() : null;
-    }
-    
-    // Delegacion para boton Run
-    public void addRunListener(ActionListener listener) {
-        if (infoPanel != null) infoPanel.addRunListener(listener);
-    }
-    
-    public void setRunButtonSelected(boolean selected) {
-        if (infoPanel != null) {
-            infoPanel.setRunButtonSelected(selected);
-        }
-    }
-    
-    
-    public void toggleShowMemory(){
-        this.matrixPanel.toggleShowMemory();
-    }
-    
-    public void toggleShowVisited(){
-        this.matrixPanel.toggleShowVisited();
-    }
-    
+    public void toggleShowMemory(){ this.matrixPanel.toggleShowMemory(); }
+    public void toggleShowVisited(){ this.matrixPanel.toggleShowVisited(); }
 }

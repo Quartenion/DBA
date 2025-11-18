@@ -185,4 +185,12 @@ public class InfoPanelView extends JPanel {
     public void setRunButtonSelected(boolean selected) {
         runBtn.setSelected(selected);
     }
+    
+    public void setShowVisitedSelected(boolean selected) {
+        showVisitedBtn.setSelected(selected);
+    }
+
+    public void setShowMemorySelected(boolean selected) {
+        showMemoryBtn.setSelected(selected);
+    }
 }

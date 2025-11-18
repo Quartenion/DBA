@@ -10,141 +10,185 @@ public class MatrixView extends JPanel {
     
     private final WorldViewInterface matrix;
     private final Environment model;
-    private final int panelSize = 800;
+    private final int panelSize = 800; 
     private int cellSize;
     
     private boolean showVisited = false;
     private boolean showMemory  = false;
     
-    // Solo para renderizado "flotante"
-    private double agentDoubleX, agentDoubleY;
-    private double goalDoubleX, goalDoubleY;
-
+    private double agentRow, agentCol;
+    private double goalRow, goalCol;
 
     public MatrixView(WorldViewInterface matrix, Environment model) {
         this.matrix = matrix;
         this.model = model;
         initMatrix();
         setPreferredSize(new Dimension(panelSize, panelSize));
+        setBackground(Color.WHITE); 
     }
     
     private void initMatrix() {
+        updateCellSize();
+        repaint();
+    }
+    
+    private void updateCellSize() {
         int rows = this.matrix.getRows();
         int cols = this.matrix.getCols();
-        // Evitar division por cero si el mundo aun no esta inicializado
-        if (rows <= 0 || cols <= 0) {
-            this.cellSize = 1; // valor por defecto seguro
-        } else {
-            this.cellSize = Math.min(panelSize / rows, panelSize / cols);
+        if (rows > 0 && cols > 0) {
+             this.cellSize = Math.min(getWidth() / cols, getHeight() / rows);
+             if (this.cellSize < 1) this.cellSize = 1; 
         }
-        repaint();
+    }
+
+    /**
+     * Calcula el color del mapa de calor basado en el número de visitas.
+     * 1 visita = Amarillo Claro
+     * + visitas = Gradiente hacia Naranja y Rojo
+     */
+    private Color getHeatmapColor(int visits) {
+        int maxVisits = 10; // A partir de 10 visitas se ve rojo puro
+        
+        if (visits <= 1) {
+            return new Color(255, 255, 180); // Amarillo base
+        }
+
+        // Normalizar entre 0.0 y 1.0
+        float ratio = Math.min(1.0f, (float)(visits - 1) / maxVisits);
+
+        // Reducimos el verde para ir de Amarillo (255,255,0) a Rojo (255,0,0)
+        int green = 255 - (int)(255 * ratio);
+        green = Math.max(0, green);
+
+        return new Color(255, green, 0);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g);  // ✅ Primero limpia el fondo
+        super.paintComponent(g); 
 
-        if (matrix == null || matrix.empty() || cellSize <= 0) return;
-
-        // Recalcular cellSize (seguro)
-        this.cellSize = Math.min(getWidth() / matrix.getCols(), getHeight() / matrix.getRows());
+        if (matrix == null) return;
         
-        // Obtener memoria del modelo
-        Set<String> visitedCells = model.getVisitedCells();
-        Set<String> seenCells    = model.getSeenCells();
-        
+        int rows = matrix.getRows();
+        int cols = matrix.getCols();
+        if (rows == 0 || cols == 0) return;
 
-        // Dibujar el mapa (como antes)
-        for (int i = 0; i < matrix.getRows(); i++) {
-            for (int j = 0; j < matrix.getCols(); j++) {
-                String cellKey = i + "," + j;
-                Color color;
-                
-                
-                // Prioridad de colores:
-                // 1. Obstaculos (negro)
-                // 2. Visitadas (amarillo claro) - si el toggle esta activo
-                // 3. Vistas (azul muy claro) - si el toggle esta activo
-                // 4. No exploradas (blanco)
-                
-                switch(matrix.getTile(i, j)){
-                    case 0 ->   {
-                                if (showVisited && visitedCells.contains(cellKey)){
-                                    color = new Color(255, 255, 150);
-                                }
-                                else if (showMemory && seenCells.contains(cellKey)){
-                                    color = new Color(200,220,255);
-                                }
-                                else{
-                                    color = Color.WHITE;
-                                }
-                                }
-                    case -1 -> color = Color.BLACK;
-                    default -> color = Color.LIGHT_GRAY;
-                    
+        updateCellSize();
+        
+        Graphics2D g2d = (Graphics2D) g;
+        // Desactivar antialiasing para el mapa (cuadrados nítidos)
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        // Obtenemos copias seguras de la memoria (gracias a los métodos synchronized del modelo)
+        Set<String> visitedCells = showVisited ? model.getVisitedCells() : null;
+        Set<String> seenCells    = showMemory ? model.getSeenCells() : null;
+        
+        // --- 1. RELLENAR CELDAS (Obstáculos / Visitadas / Memoria) ---
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                int tileType = matrix.getTile(r, c);
+                int pixelX = c * cellSize;
+                int pixelY = r * cellSize;
+
+                if (tileType == -1) {
+                    g2d.setColor(Color.BLACK);
+                    g2d.fillRect(pixelX, pixelY, cellSize, cellSize);
+                } else {
+                    // Solo calcular lógica de pintado si los botones están activos
+                    if (showVisited || showMemory) {
+                        String cellKey = r + "," + c;
+                        
+                        // PRIORIDAD 1: Visitadas (Heatmap)
+                        if (showVisited && visitedCells != null && visitedCells.contains(cellKey)) {
+                            int visits = model.getVisitCount(r, c);
+                            g2d.setColor(getHeatmapColor(visits));
+                            g2d.fillRect(pixelX, pixelY, cellSize, cellSize);
+                        } 
+                        // PRIORIDAD 2: Vistas (Memoria) - Azul suave
+                        else if (showMemory && seenCells != null && seenCells.contains(cellKey)) {
+                            g2d.setColor(new Color(220, 240, 255)); 
+                            g2d.fillRect(pixelX, pixelY, cellSize, cellSize);
+                        }
+                    }
                 }
-
-                g.setColor(color);
-                g.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
-                g.setColor(Color.BLACK);
-                g.drawRect(j * cellSize, i * cellSize, cellSize, cellSize);
-
             }
         }
 
-        // ✅ Dibujar OBJETIVO (mejor como circulo centrado)
-        g.setColor(Color.GREEN);
-        g.fillRect((int)(goalDoubleY * cellSize), (int)(goalDoubleX * cellSize), 
-                                                            cellSize, cellSize);
+        // --- 2. DIBUJAR EL GRID (OPTIMIZADO) ---
+        g2d.setColor(new Color(230, 230, 230)); // Gris muy claro
+        
+        // Líneas Verticales
+        int mapHeight = rows * cellSize;
+        for (int c = 0; c <= cols; c++) {
+            int x = c * cellSize;
+            g2d.drawLine(x, 0, x, mapHeight);
+        }
+        
+        // Líneas Horizontales
+        int mapWidth = cols * cellSize;
+        for (int r = 0; r <= rows; r++) {
+            int y = r * cellSize;
+            g2d.drawLine(0, y, mapWidth, y);
+        }
 
-        // ✅ Dibujar AGENTE (circulo centrado)
-        g.setColor(Color.BLUE);
-        int agentSize = cellSize - cellSize / 3;
-        int agentX = (int)(agentDoubleY * cellSize + cellSize / 2 - agentSize / 2);
-        int agentY = (int)(agentDoubleX * cellSize + cellSize / 2 - agentSize / 2);
-        g.fillOval(agentX, agentY, agentSize, agentSize);
+        // --- 3. ELEMENTOS DINÁMICOS (Con Antialiasing) ---
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Objetivo (Cuadrado Verde)
+        g2d.setColor(new Color(0, 200, 0));
+        int goalPixelX = (int)(goalCol * cellSize); 
+        int goalPixelY = (int)(goalRow * cellSize); 
+        g2d.fillRect(goalPixelX + 1, goalPixelY + 1, cellSize - 2, cellSize - 2); 
+
+        // Agente (Círculo Azul)
+        g2d.setColor(Color.BLUE);
+        double agentSize = Math.max(2, cellSize * 0.8); 
+        double offset = (cellSize - agentSize) / 2.0;
+        
+        int agentPixelX = (int)(agentCol * cellSize + offset);
+        int agentPixelY = (int)(agentRow * cellSize + offset);
+        
+        g2d.fillOval(agentPixelX, agentPixelY, (int)agentSize, (int)agentSize);
     }
     
-    
-    // Setters
-    public void setAgentDoublePos(double x, double y){
-        this.agentDoubleX = x;
-        this.agentDoubleY = y;
+    // --- SETTERS Y GETTERS ---
+    public void setAgentVisualPos(double row, double col){
+        this.agentRow = row;
+        this.agentCol = col;
         repaint();
     }
     
-    public void setGoalDoublePos(double x, double y){
-        this.goalDoubleX = x;
-        this.goalDoubleY = y;
+    public void setGoalVisualPos(double row, double col){
+        this.goalRow = row;
+        this.goalCol = col;
         repaint();
     }
     
-    public void toggleShowMemory(){
-        this.showMemory = !this.showMemory;
+    // Métodos explícitos para control desde el Controller
+    public void setShowVisited(boolean show) {
+        this.showVisited = show;
+        repaint();
+    }
+
+    public void setShowMemory(boolean show) {
+        this.showMemory = show;
+        repaint();
     }
     
-    public void toggleShowVisited(){
-        this.showVisited = !this.showVisited;
+    // Métodos Toggle para los botones
+    public void toggleShowMemory(){ 
+        this.showMemory = !this.showMemory; 
+        repaint(); 
     }
     
+    public void toggleShowVisited(){ 
+        this.showVisited = !this.showVisited; 
+        repaint(); 
+    }
     
-    // Getters
-    public int getPanelSize() {
-        return panelSize;
-    }
-    public int getCellSize() {
-        return cellSize;
-    }
-    public double getAgentDoubleX() {
-        return agentDoubleX;
-    }
-    public double getAgentDoubleY() {
-        return agentDoubleY;
-    }
-    public double getGoalDoubleX() {
-        return goalDoubleX;
-    }
-    public double getGoalDoubleY() {
-        return goalDoubleY;
-    }
+    public int getCellSize() { return cellSize; }
+    public double getAgentDoubleRow() { return agentRow; }
+    public double getAgentDoubleCol() { return agentCol; }
+    public double getGoalDoubleRow() { return goalRow; }
+    public double getGoalDoubleCol() { return goalCol; }
 }
