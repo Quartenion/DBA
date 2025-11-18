@@ -11,7 +11,7 @@ public class AgentP2 extends Agent {
     // Enviroment of the agent to store all the data
     private Environment model;
     // Time for the tickers
-    private final int ACTION_TIME = 1000;
+    private final int ACTION_TIME = 1;
     // private DataStore sharedDataStore; // DataStore compartido
     
     
