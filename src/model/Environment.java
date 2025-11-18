@@ -31,7 +31,7 @@ public class Environment {
     
     private WorldPerceptionInterface world;
     
-    // Celdas visitadas (donde el agente ha ESTADO físicamente)
+    // Celdas visitadas (donde el agente ha ESTADO fisicamente)
     private Set<String> visitedCells;
     
     // Celdas vistas (que el agente ha PERCIBIDO con sus sensores)
@@ -82,13 +82,13 @@ public class Environment {
         this.goalY = y;  
     }
     
-    // Lógica de negocio en el modelo
+    // Logica de negocio en el modelo
     public synchronized boolean isGoalReached() {
         return agentX == goalX && agentY == goalY;
     }
     
     // ============================================
-    // GESTIÓN DE MEMORIA
+    // GESTION DE MEMORIA
     // ============================================
     
     
@@ -103,7 +103,6 @@ public class Environment {
     // Añade una celda a la memoria de vistas
     public void addSeenCell(int x, int y) { seenCells.add(x + "," + y); }
     
-    
     // Comprueba si una celda ha sido visitada
     public boolean hasVisited(int x, int y) { return visitedCells.contains(x + "," + y); }
     
@@ -117,7 +116,7 @@ public class Environment {
     // Obtiene todas las celdas vistas
     public Set<String> getSeenCells() { return new HashSet<>(seenCells); }
     
-    // Reinicia la memoria (útil al cargar nuevo mapa)
+    // Reinicia la memoria (util al cargar nuevo mapa)
     public void clearMemory() {
        visitedCells.clear();
        seenCells.clear();
@@ -181,11 +180,11 @@ public class Environment {
 
     */
     // ============================================
-    // INFORMACIÓN SOBRE EL OBJETIVO
+    // INFORMACION SOBRE EL OBJETIVO
     // ============================================
 
     /**
-     * Calcula la dirección hacia el objetivo
+     * Calcula la direccion hacia el objetivo
      * @return [deltaX, deltaY] - distancia en filas y columnas
      */
     public int[] getDirectionToGoal() {
@@ -197,7 +196,7 @@ public class Environment {
     // ============================================
 
     /**
-     * Mueve al agente en la dirección indicada
+     * Mueve al agente en la direccion indicada
      * @param direction "UP", "DOWN", "LEFT", "RIGHT"
      */
     public void moveAgent(String direction) {
@@ -229,11 +228,11 @@ public class Environment {
 
     public void incrementEnergy() { energyUsed++; }
     
-    // Reiniciar energía
+    // Reiniciar energia
     public void resetEnergy() { energyUsed = 0; }
     
     /**
-    * Obtiene información sobre qué direcciones han sido visitadas
+    * Obtiene informacion sobre que direcciones han sido visitadas
     * @return array [UP visitado, DOWN visitado, LEFT visitado, RIGHT visitado]
     *         donde true = ya visitada, false = no visitada
     */
@@ -256,8 +255,8 @@ public class Environment {
    }
 
    /**
-    * Cuenta cuántas veces se ha visitado una celda
-    * (Para implementación avanzada de backtracking)
+    * Cuenta cuantas veces se ha visitado una celda
+    * (Para implementacion avanzada de backtracking)
     */
    private java.util.Map<String, Integer> visitCountMap = new java.util.HashMap<>();
 

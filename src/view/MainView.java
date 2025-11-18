@@ -12,10 +12,10 @@ public class MainView extends JFrame {
     private InfoPanelView infoPanel = null;
     
     public MainView(WorldViewInterface world, Environment model) {
-        setTitle("Simulación de Mundo - Agente");
+        setTitle("Simulacion de Mundo - Agente");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
-        // Inicialización inicial
+        // Inicializacion inicial
         initComponents(world, model);
     }
     
@@ -111,7 +111,7 @@ public class MainView extends JFrame {
         return matrixPanel.getGoalDoubleY();
     }
     
-    // Delegación para el selector de mapas (encapsulación)
+    // Delegacion para el selector de mapas (encapsulacion)
     public void setMapList(String[] maps) {
         if (infoPanel != null) infoPanel.setMapList(maps);
     }
@@ -124,7 +124,7 @@ public class MainView extends JFrame {
         return (infoPanel != null) ? infoPanel.getSelectedMap() : null;
     }
     
-    // Delegación para botón Run
+    // Delegacion para boton Run
     public void addRunListener(ActionListener listener) {
         if (infoPanel != null) infoPanel.addRunListener(listener);
     }
