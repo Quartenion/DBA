@@ -42,21 +42,16 @@ public class MatrixView extends JPanel {
     }
 
     /**
-     * Calcula el color del mapa de calor basado en el número de visitas.
-     * 1 visita = Amarillo Claro
-     * + visitas = Gradiente hacia Naranja y Rojo
+     * Calcula el color del mapa de calor.
      */
     private Color getHeatmapColor(int visits) {
-        int maxVisits = 10; // A partir de 10 visitas se ve rojo puro
+        int maxVisits = 10; 
         
         if (visits <= 1) {
             return new Color(255, 255, 180); // Amarillo base
         }
 
-        // Normalizar entre 0.0 y 1.0
         float ratio = Math.min(1.0f, (float)(visits - 1) / maxVisits);
-
-        // Reducimos el verde para ir de Amarillo (255,255,0) a Rojo (255,0,0)
         int green = 255 - (int)(255 * ratio);
         green = Math.max(0, green);
 
@@ -76,14 +71,12 @@ public class MatrixView extends JPanel {
         updateCellSize();
         
         Graphics2D g2d = (Graphics2D) g;
-        // Desactivar antialiasing para el mapa (cuadrados nítidos)
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 
-        // Obtenemos copias seguras de la memoria (gracias a los métodos synchronized del modelo)
         Set<String> visitedCells = showVisited ? model.getVisitedCells() : null;
         Set<String> seenCells    = showMemory ? model.getSeenCells() : null;
         
-        // --- 1. RELLENAR CELDAS (Obstáculos / Visitadas / Memoria) ---
+        // --- 1. RELLENAR CELDAS ---
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 int tileType = matrix.getTile(r, c);
@@ -94,17 +87,35 @@ public class MatrixView extends JPanel {
                     g2d.setColor(Color.BLACK);
                     g2d.fillRect(pixelX, pixelY, cellSize, cellSize);
                 } else {
-                    // Solo calcular lógica de pintado si los botones están activos
                     if (showVisited || showMemory) {
                         String cellKey = r + "," + c;
                         
-                        // PRIORIDAD 1: Visitadas (Heatmap)
+                        // CASO 1: VISITADAS (HEATMAP + NÚMERO)
                         if (showVisited && visitedCells != null && visitedCells.contains(cellKey)) {
                             int visits = model.getVisitCount(r, c);
+                            
+                            // A. Fondo de color
                             g2d.setColor(getHeatmapColor(visits));
                             g2d.fillRect(pixelX, pixelY, cellSize, cellSize);
+                            
+                            // B. Dibujar número (Solo si cabe)
+                            if (cellSize > 15) { 
+                                g2d.setColor(Color.BLACK); // Texto negro
+                                // Ajustar tamaño de fuente al tamaño de la celda
+                                int fontSize = Math.max(10, (int)(cellSize * 0.5));
+                                g2d.setFont(new Font("SansSerif", Font.BOLD, fontSize));
+                                
+                                String text = String.valueOf(visits);
+                                FontMetrics fm = g2d.getFontMetrics();
+                                
+                                // Cálculo para centrar el texto perfectamente
+                                int textX = pixelX + (cellSize - fm.stringWidth(text)) / 2;
+                                int textY = pixelY + (cellSize - fm.getHeight()) / 2 + fm.getAscent();
+                                
+                                g2d.drawString(text, textX, textY);
+                            }
                         } 
-                        // PRIORIDAD 2: Vistas (Memoria) - Azul suave
+                        // CASO 2: MEMORIA (Solo fondo azul)
                         else if (showMemory && seenCells != null && seenCells.contains(cellKey)) {
                             g2d.setColor(new Color(220, 240, 255)); 
                             g2d.fillRect(pixelX, pixelY, cellSize, cellSize);
@@ -114,33 +125,29 @@ public class MatrixView extends JPanel {
             }
         }
 
-        // --- 2. DIBUJAR EL GRID (OPTIMIZADO) ---
-        g2d.setColor(new Color(230, 230, 230)); // Gris muy claro
-        
-        // Líneas Verticales
+        // --- 2. DIBUJAR GRID ---
+        g2d.setColor(new Color(230, 230, 230)); 
         int mapHeight = rows * cellSize;
         for (int c = 0; c <= cols; c++) {
             int x = c * cellSize;
             g2d.drawLine(x, 0, x, mapHeight);
         }
-        
-        // Líneas Horizontales
         int mapWidth = cols * cellSize;
         for (int r = 0; r <= rows; r++) {
             int y = r * cellSize;
             g2d.drawLine(0, y, mapWidth, y);
         }
 
-        // --- 3. ELEMENTOS DINÁMICOS (Con Antialiasing) ---
+        // --- 3. ELEMENTOS DINÁMICOS ---
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Objetivo (Cuadrado Verde)
+        // Objetivo
         g2d.setColor(new Color(0, 200, 0));
         int goalPixelX = (int)(goalCol * cellSize); 
         int goalPixelY = (int)(goalRow * cellSize); 
         g2d.fillRect(goalPixelX + 1, goalPixelY + 1, cellSize - 2, cellSize - 2); 
 
-        // Agente (Círculo Azul)
+        // Agente
         g2d.setColor(Color.BLUE);
         double agentSize = Math.max(2, cellSize * 0.8); 
         double offset = (cellSize - agentSize) / 2.0;
@@ -164,7 +171,6 @@ public class MatrixView extends JPanel {
         repaint();
     }
     
-    // Métodos explícitos para control desde el Controller
     public void setShowVisited(boolean show) {
         this.showVisited = show;
         repaint();
@@ -175,7 +181,6 @@ public class MatrixView extends JPanel {
         repaint();
     }
     
-    // Métodos Toggle para los botones
     public void toggleShowMemory(){ 
         this.showMemory = !this.showMemory; 
         repaint(); 

@@ -2,13 +2,9 @@ package controller;
 
 /**
  * Controlador principal de la aplicacion. 
- * Implementa el patron MVC (Model-View-Controller).
- * * CORRECCIONES:
- * 1. Uso explícito de Row (Fila/Y) y Col (Columna/X).
- * 2. Switch case para carga de mapas.
- * 3. Timer a 40ms.
- * 4. Reset de botones UI al cambiar de mapa.
- * * @author Group_7_DBA
+ * - Lee configuraciones desde 'posiciones.txt'.
+ * - Gestiona la carga de mapas y la simulacion.
+ * - Respeta MVC.
  */
 import jade.wrapper.ContainerController;
 import jade.wrapper.ControllerException;
@@ -20,6 +16,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import model.Environment;
 import model.World;
 import view.MainView;
@@ -30,6 +28,7 @@ public class Controller {
     private MainView view;            
     private World modelWorld;         
     private final String mapsDir = "./maps/"; 
+    private final String configFilePath = "./maps/posiciones.txt"; // Archivo de configuracion
     
     private Environment model;        
     private ContainerController cc;   
@@ -42,6 +41,30 @@ public class Controller {
     private double dragOffsetRow = 0; 
     private double dragOffsetCol = 0; 
     
+    // Cache de configuraciones de mapas: NombreArchivo -> Configuracion
+    private Map<String, MapConfig> mapConfigs = new HashMap<>();
+
+    // Clase interna para guardar la config de un mapa
+    private static class MapConfig {
+        int agentX, agentY; // Fila, Columna (Ojo: en tu txt X es Columna, Y es Fila, o al revés?)
+        int goalX, goalY;   // Ajustaremos según tu formato: Agent-x (col), Agent-y (row)
+        
+        // Según tu ejemplo: "Agent-x  Agent-y".
+        // En tu código previo usabas: setAgentPosition(row, col).
+        // IMPORTANTE: En 'posiciones.txt':
+        // mapVertical.txt -> Agent-x: 0, Agent-y: 25.
+        // Tu switch anterior: startR = 25 (Y), startC = 0 (X).
+        // CONCLUSIÓN: En el txt, la columna "Agent-x" es la coordenada X (Columna)
+        // y "Agent-y" es la coordenada Y (Fila).
+        
+        public MapConfig(int ax, int ay, int gx, int gy) {
+            this.agentX = ax; // Columna
+            this.agentY = ay; // Fila
+            this.goalX = gx;  // Columna
+            this.goalY = gy;  // Fila
+        }
+    }
+    
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
     // -------------------------------------------------------------------------
@@ -51,8 +74,50 @@ public class Controller {
         this.modelWorld = modelWorld;
         this.cc = cc;
         
+        // 1. Cargar configuraciones desde el txt
+        loadMapConfigurations();
+        
         createEventListeners();
         createViewListeners(); 
+    }
+
+    /**
+     * Lee el archivo posiciones.txt y carga los datos en memoria.
+     */
+    private void loadMapConfigurations() {
+        File configFile = new File(configFilePath);
+        if (!configFile.exists()) {
+            System.err.println("⚠️ AVISO: No se encontró " + configFilePath + ". Se usarán posiciones por defecto.");
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(configFile))) {
+            String line = br.readLine(); // Leer cabecera y descartarla
+            
+            while ((line = br.readLine()) != null) {
+                // Formato: Tipo mapa | fichero | Agent-x | Agent-y | Goal-x | Goal-y | Energia
+                // Separador: Tabulador (\t) o espacios multiples
+                String[] parts = line.trim().split("\\t+"); // Split por tabuladores
+                
+                if (parts.length >= 6) {
+                    String filename = parts[1].trim();
+                    try {
+                        // NOTA: En tu txt: "Agent-x" (columna) es parts[2], "Agent-y" (fila) es parts[3]
+                        int ax = Integer.parseInt(parts[2].trim()); // Columna (X)
+                        int ay = Integer.parseInt(parts[3].trim()); // Fila (Y)
+                        int gx = Integer.parseInt(parts[4].trim()); // Columna (X)
+                        int gy = Integer.parseInt(parts[5].trim()); // Fila (Y)
+                        
+                        mapConfigs.put(filename, new MapConfig(ax, ay, gx, gy));
+                        // System.out.println("Config cargada para: " + filename); // Debug
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parseando linea de config: " + line);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error leyendo " + configFilePath + ": " + e.getMessage());
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -201,16 +266,9 @@ public class Controller {
 
                 // 2. COMPROBAR SI SE ALCANZÓ EL OBJETIVO
                 if (model.isGoalReached()) {
-                    // Detener lógica del agente
                     this.model.stop();
-                    
-                    // Actualizar estado del controlador (esto desbloquea el ratón)
                     this.isRunning = false;
-                    
-                    // Visualmente "soltar" el botón Run
                     view.setRunButtonSelected(false);
-                    
-                    // Opcional: Mensaje de log
                     view.addLogEntry("¡OBJETIVO ALCANZADO! - Stop");
                 }
             }
@@ -269,7 +327,7 @@ public class Controller {
         // 1. Actualizar vista (sin destruir el panel)
         view.resetMapView(modelWorld, model);
 
-        // 2. NUEVO: Resetear todos los botones (Toggle buttons a false)
+        // 2. Resetear botones
         view.resetToggles(); 
 
         // 3. Sincronizar posiciones
@@ -301,75 +359,41 @@ public class Controller {
             // Actualizar Modelo Físico
             this.modelWorld.changeMap(newMap, rows, cols);
             
-            // Determinar posiciones iniciales
+            // Determinar posiciones iniciales (AUTOMATIZADO)
             File file = new File(rutaArchivo);
             String fileName = file.getName();
             
-            int startR = rows - 1, startC = cols - 1;
-            int goalR = 0, goalC = 0;
+            int startR = rows - 1, startC = cols - 1; // Default: abajo-derecha
+            int goalR = 0, goalC = 0;                 // Default: arriba-izquierda
 
-            // Lógica de posiciones hardcodeadas para las pruebas
-            switch (fileName) {
-                case "mapVertical.txt":
-                    startR = 25; startC = 0;
-                    goalR = 25;  goalC = 49;
-                    break;
-                case "mapComplex3.txt":
-                    startR = 17; startC = 49;
-                    goalR = 15;  goalC = 3;
-                    break;
-                case "mapComplex4.txt":
-                    startR = 27; startC = 49;
-                    goalR = 39;  goalC = 15;
-                    break;
-                case "mapComplex5.txt":
-                    startR = 49; startC = 25;
-                    goalR = 37;  goalC = 25;
-                    break;
-                case "mapComplex6.txt":
-                    startR = 31; startC = 24;
-                    goalR = 34;  goalC = 25;
-                    break;
-                case "mapHorizontal.txt":
-                    startR = 49; startC = 30;
-                    goalR = 0;   goalC = 30;
-                    break;
-                case "mapTriangleBig.txt":
-                case "mapComplex1.txt":
-                case "mapComplex2.txt":
-                    startR = 49; startC = 30;
-                    goalR = 0;   goalC = 40;
-                    break;
-                case "mapWithoutObstacle.txt":
-                    startR = 49; startC = 49;
-                    goalR = 0;   goalC = 0;
-                    break;
-                default:
-                    startR = rows - 1; startC = cols - 1;
-                    goalR = 0; goalC = 0;
-                    break;
+            // Buscamos en nuestro mapa de configuraciones cargado previamente
+            if (mapConfigs.containsKey(fileName)) {
+                MapConfig cfg = mapConfigs.get(fileName);
+                // OJO: En el txt: X = Columna, Y = Fila.
+                // setAgentPosition(FILA, COLUMNA)
+                startR = cfg.agentY; // Fila
+                startC = cfg.agentX; // Columna
+                goalR = cfg.goalY;   // Fila
+                goalC = cfg.goalX;   // Columna
+            } else {
+                System.out.println("⚠️ Configuración no encontrada para " + fileName + ". Usando defaults.");
             }
 
             // 3. Aplicar al Modelo Lógico
             this.model.setAgentPosition(startR, startC);
             this.model.setGoalPosition(goalR, goalC);
             
-            // === NUEVO: SIMULAR VISIÓN INICIAL ===
-            // Como el agente está parado, forzamos manualmente la visión 
-            // de las celdas adyacentes (Up, Down, Left, Right)
+            // === SIMULAR VISIÓN INICIAL ===
             int[] dr = {-1, 1, 0, 0};
             int[] dc = {0, 0, -1, 1};
             
             for (int k = 0; k < 4; k++) {
                 int nr = startR + dr[k];
                 int nc = startC + dc[k];
-                
-                // Si la celda adyacente está dentro del mapa, la añadimos a la memoria visual
                 if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
                     this.model.addSeenCell(nr, nc);
                 }
             }
-            // =====================================
             
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error al leer el archivo de mapa: " + e.getMessage());

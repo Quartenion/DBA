@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class AgentP2 extends Agent {
     private Environment model;
-    private final int ACTION_TIME = 1;
+    private final int ACTION_TIME = 100;
     private String lastMove = null; // Guarda la ultima accion efectiva ("UP", "DOWN", etc.)
     
     // Sensores: 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
