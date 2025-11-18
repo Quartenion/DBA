@@ -153,8 +153,8 @@ public class InfoPanelView extends JPanel {
 
     public void addLogEntry(String entry) {
         logModel.add(0, entry); // añadimos arriba
-        if (logModel.size() > 5) {
-            logModel.remove(logModel.size() - 1); // mantenemos solo 5
+        if (logModel.size() > 20) {
+            logModel.remove(logModel.size() - 1); // mantenemos solo 20
         }
     }
 
