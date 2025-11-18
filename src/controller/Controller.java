@@ -387,8 +387,8 @@ public class Controller {
             // MAPAS Y SUS POSICIONES PARA LA EVALUCACION
             
             // mapWithoutObstacle.txt:
-            //this.model.setAgentPosition(49, 49);
-            //this.model.setGoalPosition(0,0);
+            // this.model.setAgentPosition(49, 49);
+            // this.model.setGoalPosition(0,0);
             // ACCIONES: 98
             // ACCIONES ESPERADAS: 98
             
@@ -396,12 +396,12 @@ public class Controller {
             // this.model.setAgentPosition(49, 30);
             // this.model.setGoalPosition(0,30);
             // ACCIONES: 85
-            // ACCIONES ESPERADAS: 85
+            // ACCIONES ESPERADAS: 85 
             
             // mapVertical.txt:
             // this.model.setAgentPosition(25, 0);
             // this.model.setGoalPosition(25,49);
-            // ACCIONES: 475
+            // ACCIONES: 209
             // ACCIONES ESPERADAS: 103 -----------------------------------------
             
             // mapTriangleBig.txt:
@@ -413,20 +413,20 @@ public class Controller {
             // mapComplex1.txt:
             // this.model.setAgentPosition(49, 30);
             // this.model.setGoalPosition(0,40);
-            // ACCIONES: 369
+            // ACCIONES: 181
             // ACCIONES ESPERADAS: 381
             
             // mapComplex2.txt:
             // this.model.setAgentPosition(49, 30);
             // this.model.setGoalPosition(0,40);
-            // ACCIONES: 169
-            // ACCIONES ESPERADAS: 107 -----------------------------------------
+            // ACCIONES: 107
+            // ACCIONES ESPERADAS: 107 
             
             // mapComplex3.txt:
             // this.model.setAgentPosition(17, 49);
             // this.model.setGoalPosition(15,3);
-            // ACCIONES: 318
-            // ACCIONES ESPERADAS: 162 -----------------------------------------
+            // ACCIONES: 162
+            // ACCIONES ESPERADAS: 162 
             
             // mapComplex4.txt:
             // this.model.setAgentPosition(27, 49);
@@ -443,8 +443,8 @@ public class Controller {
             // mapComplex6.txt:
             // this.model.setAgentPosition(31, 24);
             // this.model.setGoalPosition(34,25);
-            // ACCIONES: 286
-            // ACCIONES ESPERADAS: 176 -----------------------------------------
+            // ACCIONES: 176
+            // ACCIONES ESPERADAS: 176 
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
