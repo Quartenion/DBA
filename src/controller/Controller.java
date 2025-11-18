@@ -381,8 +381,8 @@ public class Controller {
             // Actualizar modelo fisico
             this.modelWorld.changeMap(newMap, rows, cols);
             // REINCIAR POSICIONES AQUI!!!--------------------------------------
-            //this.model.setAgentPosition(rows-1, cols-1);
-            //this.model.setGoalPosition(0,0);
+            this.model.setAgentPosition(rows-1, cols-1);
+            this.model.setGoalPosition(0,0);
             
             // MAPAS Y SUS POSICIONES PARA LA EVALUCACION
             
