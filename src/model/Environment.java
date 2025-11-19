@@ -176,4 +176,24 @@ public class Environment {
     public synchronized int getEnergyUsed() { return energyUsed; }
     public synchronized void incrementEnergy() { energyUsed++; }
     public synchronized void resetEnergy() { energyUsed = 0; }
+    
+    // PARA EL ANTIGUO COMPORTAMIENTO
+    public synchronized boolean[] getVisitedDirections() {
+        boolean[] visited = new boolean[4];
+        // Asumiendo que agentX es fila y agentY es columna
+        visited[0] = hasVisited(agentX - 1, agentY); // UP
+        visited[1] = hasVisited(agentX, agentY + 1); // RIGHT
+        visited[2] = hasVisited(agentX + 1, agentY); // DOWN
+        visited[3] = hasVisited(agentX, agentY - 1); // LEFT
+        return visited;
+    }
+
+    public synchronized int[] getVisitCounts() {
+        int[] counts = new int[4];
+        counts[0] = getVisitCount(agentX - 1, agentY); // UP
+        counts[1] = getVisitCount(agentX, agentY + 1); // RIGHT
+        counts[2] = getVisitCount(agentX + 1, agentY); // DOWN
+        counts[3] = getVisitCount(agentX, agentY - 1); // LEFT
+        return counts;
+    }
 }
