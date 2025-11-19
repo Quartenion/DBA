@@ -270,23 +270,38 @@ public class AgentP2 extends Agent {
         }
         
         private boolean decideHand(int blockedDir, int[] goalDir) {
-            int dY = goalDir[0];
-            int dX = goalDir[1];
-            
-            boolean result;
-            if (blockedDir == 0) result = dX >= 0;      // UP -> Left hand si goal a derecha
-            else if (blockedDir == 2) result = dX >= 0; // DOWN -> Left hand si goal a derecha
-            else if (blockedDir == 1) result = dY < 0;  // RIGHT -> Left hand si goal arriba
-            else if (blockedDir == 3) result = dY >= 0; // LEFT -> Right hand si goal abajo
-            else result = true;
-            
-            return result;
+            int dY = goalDir[0]; 
+            int dX = goalDir[1]; 
+
+            switch (blockedDir) {
+                case 0: // Bloqueado ARRIBA
+                    // LHR lleva a Derecha. RHR lleva a Izquierda.
+                    // Si el objetivo esta a la derecha (dX > 0), quiero LHR.
+                    return dX >= 0;
+
+                case 1: // Bloqueado DERECHA
+                    // LHR lleva a Abajo. RHR lleva a Arriba.
+                    // Si el objetivo esta Abajo (dY > 0), quiero LHR.
+                    return dY > 0;
+
+                case 2: // Bloqueado ABAJO
+                    // LHR lleva a Izquierda. RHR lleva a Derecha.
+                    // Si el objetivo esta a la Izquierda (dX < 0), quiero LHR.
+                    return dX <= 0;
+
+                case 3: // Bloqueado IZQUIERDA
+                    // LHR lleva a Arriba. RHR lleva a Abajo.
+                    // Si el objetivo esta Arriba (dY < 0), quiero LHR.
+                    return dY < 0;
+            }
+
+            return true;
         }
 
         private String followWallStrict(Map<RelativePos,Integer> perception) {
             String[] dirs = {"UP", "RIGHT", "DOWN", "LEFT"};
-            int turnOut = useLeftHand ? 3 : 1; // (-1 mod 4) Girar hacia afuera
-            int turnIn  = useLeftHand ? 1 : 3; // (+1 mod 4) Girar hacia adentro
+            int turnOut = useLeftHand ? 1 : 3; // (-1 mod 4) Girar hacia afuera
+            int turnIn  = useLeftHand ? 3 : 1; // (+1 mod 4) Girar hacia adentro
 
             // 1. REGLA DEL HUECO (Esquina Convexa): Intentar girar hacia la pared
             if (isFree(wallToFollow, perception)) {
