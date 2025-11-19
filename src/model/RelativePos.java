@@ -33,7 +33,6 @@ public class RelativePos {
         return eval(pos.getX(), pos.getY());
     }
     
-    // Must be overriden for Set or Map
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -42,7 +41,6 @@ public class RelativePos {
         return x == that.x && y == that.y;
     }
 
-    // Must be overriden for Set or Map
     @Override
     public int hashCode() {
         return Objects.hash(x, y);

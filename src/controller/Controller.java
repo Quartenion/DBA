@@ -2,22 +2,9 @@ package controller;
 
 /**
  * Controlador principal de la aplicacion. 
- * Implementa el patron MVC (Model-View-Controller):
- * - Model: {@link World}, {@link Environment}
- * - View:  {@link MainView}
- * - Controller: esta clase.
- * 
- * Responsabilidades:
- * - Gestionar eventos de usuario (raton, botones, cierre).
- * - Coordinar actualizaciones entre modelo y vista.
- * - Cargar y reiniciar mapas.
- * - Controlar el ciclo de vida de JADE (ContainerController).
- * 
- * Importante: este controlador SOLO conoce a {@link MainView}, 
- * nunca accede directamente a subcomponentes como InfoPanelView o MatrixView.
- * Esto mantiene el acoplamiento debil y facilita el mantenimiento.
- * 
- * @author Group_7_DBA
+ * - Lee configuraciones desde 'posiciones.txt'.
+ * - Gestiona la carga de mapas y la simulacion.
+ * - Respeta MVC.
  */
 import jade.wrapper.ContainerController;
 import jade.wrapper.ControllerException;
@@ -26,270 +13,344 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import model.Environment;
 import model.World;
 import view.MainView;
 
 public class Controller {
     
-    // === DEPENDENCIAS (inyectadas externamente) ===
-    private MainView view;           // Vista principal (unica interfaz conocida)
-    private World modelWorld;        // Modelo fisico del mundo (matriz de celdas)
-    private final String mapsDir = "./maps/"; // Directorio de mapas
+    // - DEPENDENCIAS ----------------------------------------------------------
+    private MainView view;            
+    private World modelWorld;         
+    private final String mapsDir = "./maps/"; 
+    private final String configFilePath = "./maps/posiciones.txt"; 
     
-    private Environment model;       // Modelo logico (posicion agente/objetivo, estado)
-    private ContainerController cc;  // Controlador de JADE (para iniciar/detener agentes)
+    private Environment model;        
+    private ContainerController cc;   
 
-    // === ESTADO INTERNO ===
-    private boolean isRunning = false;    // Indica si la simulacion esta en ejecucion
-    private boolean draggingAgent = false; // ¿Esta el usuario arrastrando al agente?
-    private boolean draggingGoal = false;  // ¿Esta el usuario arrastrando el objetivo?
+    // - ESTADO INTERNO --------------------------------------------------------
+    private boolean isRunning = false;    
+    private boolean draggingAgent = false; 
+    private boolean draggingGoal = false;  
 
-    // Offset para arrastre suave (en coordenadas de celda, no pixeles)
-    // Permite que el agente/objetivo se siga al cursor con precision sub-celda.
-    private double dragOffsetX = 0;  // desplazamiento vertical (fila)
-    private double dragOffsetY = 0;  // desplazamiento horizontal (columna)
+    private double dragOffsetRow = 0; 
+    private double dragOffsetCol = 0; 
+    
+    // Cache de configuraciones de mapas: NombreArchivo -> Configuracion
+    private Map<String, MapConfig> mapConfigs = new HashMap<>();
+
+    // Clase interna para guardar la config de un mapa
+    private static class MapConfig {
+        int agentX, agentY; // Fila, Columna (Ojo: en el txt X es Columna, Y es Fila)
+        int goalX, goalY;   // Ajustaremos según tu formato: Agent-x (col), Agent-y (row)
+        
+        public MapConfig(int ax, int ay, int gx, int gy) {
+            this.agentX = ax; // Columna
+            this.agentY = ay; // Fila
+            this.goalX = gx;  // Columna
+            this.goalY = gy;  // Fila
+        }
+    }
     
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
     // -------------------------------------------------------------------------
-    /**
-     * Constructor. Inicializa las referencias y registra los listeners.
-     * @param view Vista principal
-     * @param modelWorld Modelo del mundo fisico (mapa)
-     * @param model Modelo del entorno (agente, objetivo, estado)
-     * @param cc Controlador de contenedor JADE (para gestion de agentes)
-     */
     public Controller(MainView view, World modelWorld, Environment model, ContainerController cc) {
         this.view = view;
         this.model = model;
         this.modelWorld = modelWorld;
         this.cc = cc;
         
-        // Registra listeners de bajo nivel: raton, ventana (cierre), etc.
+        // 1. Cargar configuraciones desde el txt
+        loadMapConfigurations();
+        
         createEventListeners();
-        // Registra listeners de alto nivel: boton Run, selector de mapas, etc.
         createViewListeners(); 
     }
 
-    // -------------------------------------------------------------------------
-    // LISTENERS DE BAJO NIVEL (interaccion directa con la vista)
-    // -------------------------------------------------------------------------
     /**
-     * Crea y registra listeners para:
-     * - Cierre de ventana (detiene JADE y sale)
-     * - Click y arrastre del raton (movimiento de agente/objetivo)
+     * Lee el archivo posiciones.txt y carga los datos en memoria
      */
+    private void loadMapConfigurations() {
+        File configFile = new File(configFilePath);
+        if (!configFile.exists()) {
+            System.err.println("AVISO: No se encontro " + configFilePath + ". Se usaran posiciones por defecto: GOAL: (0,0), AGENT: (fil-1, col-1).");
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(configFile))) {
+            String line = br.readLine(); // Descarta la cabecera del archivo (lee la primera linea y pasa a la siguiente)
+            
+            while ((line = br.readLine()) != null) {
+                // Formato: Tipo mapa | fichero | Agent-x | Agent-y | Goal-x | Goal-y | Energia
+                // Separador: Tabulador (\t) 
+                String[] parts = line.trim().split("\\t+"); // Separa el string por tabuladores
+                
+                if (parts.length >= 6) {
+                    String filename = parts[1].trim(); // Coge el nombre del archivo
+                    try {
+                        // NOTA: En el txt: "Agent-x" (columna) es parts[2], "Agent-y" (fila) es parts[3]
+                        int ax = Integer.parseInt(parts[2].trim()); // Columna (X)
+                        int ay = Integer.parseInt(parts[3].trim()); // Fila (Y)
+                        int gx = Integer.parseInt(parts[4].trim()); // Columna (X)
+                        int gy = Integer.parseInt(parts[5].trim()); // Fila (Y)
+                        
+                        mapConfigs.put(filename, new MapConfig(ax, ay, gx, gy));
+                        // System.out.println("Config cargada para: " + filename); // Debug
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parseando linea de config: " + line);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error leyendo " + configFilePath + ": " + e.getMessage());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // LISTENERS DE BAJO NIVEL (Mouse & Window)
+    // -------------------------------------------------------------------------
     private void createEventListeners() {
-        // Listener para el cierre de la ventana: mata el contenedor JADE y cierra la app
+        // ---------------------------------------------------------------------
+        // 1. LISTENER DE VENTANA (Cierre de la aplicación)
+        // ---------------------------------------------------------------------
         view.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 try {
-                    if (cc != null) cc.kill(); // Detiene todos los agentes y comportamientos
+                    // Cierra el ContainerController de JADE
+                    // para evitar que queden procesos huerfanos en memoria
+                    if (cc != null) cc.kill(); 
                 } catch (ControllerException ex) {
                     ex.printStackTrace();
                 }
-                System.exit(0); // Sale de la JVM
+                System.exit(0);
             }
         });
                 
-        // Listener de raton: detecta clicks y suelta para mover agente/objetivo
-        view.addMouseListener(new MouseAdapter() {
+        // Listener de click directo al Panel del mapa
+        view.addMapMouseListener(new MouseAdapter() {
             @Override
+            
+            // Se ejecuta cuando el usuario presiona el botón del raton
+            // Detecta si se ha hecho clic sobre el Agente o el Objetivo para iniciar el arrastre
+            
             public void mousePressed(MouseEvent e) {
-                // Si la simulacion esta corriendo, no permitir edicion manual
+                // Si la simulacion esta corriendo, bloqueamos la interaccion para no romper la logica
                 if (isRunning) return;
                 
-                // Coordenadas del raton en pixeles
-                int mouseX = e.getX(), mouseY = e.getY();
                 int cs = view.getCellSize(); // Tamaño de cada celda en pixeles
+                // Convertimos coordenadas de pantalla a coordenadas de matriz (fil, col)
+                int mouseRow = e.getY() / cs;
+                int mouseCol = e.getX() / cs;
                 
-                // Convertir a coordenadas de celda (fila, columna)
-                int agentCol = (int)(mouseX / cs);
-                int agentRow = (int)(mouseY / cs);
-                int goalCol  = (int)(mouseX / cs);
-                int goalRow  = (int)(mouseY / cs);
-
-                // Detectar si se hizo clic sobre el agente o el objetivo
-                boolean clickedAgent = (agentRow == model.getAgentX() && agentCol == model.getAgentY());
-                boolean clickedGoal  = (goalRow  == model.getGoalX()  && goalCol  == model.getGoalY());
-
-                if (clickedAgent) {
+                // VERIFICAR SI EL CLIC FUE SOBRE EL AGENTE
+                if (mouseRow == model.getAgentX() && mouseCol == model.getAgentY()) {
                     draggingAgent = true;
-                    // Calcular offset relativo: diferencia entre cursor y centro de la celda
-                    // Esto permite arrastrar desde cualquier punto dentro del circulo
-                    dragOffsetX = (double)mouseY / cs - model.getAgentX(); // en filas
-                    dragOffsetY = (double)mouseX / cs - model.getAgentY(); // en columnas
+                    // Calculamos el desplazamiento para que, al arrastrar, el objeto 
+                    // no salte al centro del raton, sino que mantenga la posicion relativa del clicí
+                    // es una tonteria pero se ve visualmente un poco mejor
+                    dragOffsetRow = (double)e.getY() / cs - model.getAgentX();
+                    dragOffsetCol = (double)e.getX() / cs - model.getAgentY();
                     return;
                 }
-                if (clickedGoal) {
+                
+                // VERIFICAR SI EL CLIC FUE SOBRE EL GOAL
+                if (mouseRow == model.getGoalX() && mouseCol == model.getGoalY()) {
                     draggingGoal = true;
-                    dragOffsetX = (double)mouseY / cs - model.getGoalX();
-                    dragOffsetY = (double)mouseX / cs - model.getGoalY();
+                    dragOffsetRow = (double)e.getY() / cs - model.getGoalX();
+                    dragOffsetCol = (double)e.getX() / cs - model.getGoalY();
                 }
             }
             
             @Override
+            
+            // Se ejecuta cuando el usuario suelta el boton del raton
+            // Aqui se valida la nueva posicion y se actualiza el modelo logico
+         
             public void mouseReleased(MouseEvent e) {
-                // Al soltar, finalizar el arrastre y actualizar modelo y vista
+                // LOGICA PARA SOLTAR AL AGENTE
                 if (draggingAgent) {
-                    // Redondear posicion flotante a celda entera mas cercana
-                    int col = (int)(view.getAgentDoubleY() + 0.5);
-                    int row = (int)(view.getAgentDoubleX() + 0.5);
-
-                    // Validar que la celda objetivo es transitable y dentro del mapa
-                    if (modelWorld.isValidPosition(row, col)) {
-                        model.clearMemory();
-                        model.resetEnergy();
-                        // ✅ Actualizar modelo PRIMERO
-                        model.setAgentPosition(row, col);
-                        // ✅ Sincronizar vista flotante con modelo
-                        view.setAgentDoublePos(row, col);
+                    // Redondeamos la posicion visual al entero mas cercano
+                    // para saber en que celda exacta cayo
+                    int targetRow = (int)(view.getAgentDoubleRow() + 0.5);
+                    int targetCol = (int)(view.getAgentDoubleCol() + 0.5);
+                    
+                    // Si la celda es valida (no es una pared, esta dentro de limites)
+                    if (modelWorld.isValidPosition(targetRow, targetCol)) {
+                        model.clearMemory(); // Reiniciamos la memoria del agente (se borra de su memoria las casillas visitadas y las vistas)
+                        model.resetEnergy(); // Reiniciamos el numero de acciones que ha realizadoú
+                        model.setAgentPosition(targetRow, targetCol); // Actualiza la logica
+                        view.setAgentDoublePos(targetRow, targetCol); // Ajusta visualmente el agente al centro de la celda
+                        view.addLogEntry("Agente movido a (" + targetRow + ", " + targetCol + ")");
                     } else {
-                        // Revertir a posicion actual del modelo
+                        // Se devuelve el agente a su posicion si la nueva áno es valida
                         view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
                     }
-
-                    // ✅ Solo ahora se puede verificar si se alcanzo el objetivo
-                    // (el modelo ya tiene la nueva posicion)
-                    // Actualizar panel lateral con nueva posicion
-                    view.setAgentPosition(model.getAgentX(), model.getAgentY());
-                    view.setGoalReached(model.isGoalReached());
-                    view.addLogEntry("Agente → (" + model.getAgentX() + ", " + model.getAgentY() + ")");
                 } 
+                // LOGICA PARA SOLTAR EL OBJETIVO (IGUAL QUE LA LOGICA DEL AGENTE)
                 else if (draggingGoal) {
-                    // Logica analoga para el objetivo
-                    int col = (int)(view.getGoalDoubleY() + 0.5);
-                    int row = (int)(view.getGoalDoubleX() + 0.5);
+                    int targetRow = (int)(view.getGoalDoubleRow() + 0.5);
+                    int targetCol = (int)(view.getGoalDoubleCol() + 0.5);
 
-                    if (modelWorld.isValidPosition(row, col)) {
-                        model.setGoalPosition(row, col);
-                        view.setGoalDoublePos(row, col);
-                        
+                    if (modelWorld.isValidPosition(targetRow, targetCol)) {
+                        model.setGoalPosition(targetRow, targetCol);
+                        view.setGoalDoublePos(targetRow, targetCol);
+                        view.addLogEntry("Objetivo movido a (" + targetRow + ", " + targetCol + ")");
                     } else {
                         view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
                     }
-
-                    view.setGoalPosition(model.getGoalX(), model.getGoalY());
-                    view.setGoalReached(model.isGoalReached());
-                    view.addLogEntry("Objetivo → (" + model.getGoalX() + ", " + model.getGoalY() + ")");
                 }
-
-                // Resetear estado de arrastre
+                
+                // Actualizar paneles de informacion si hubo cambios
+                if (draggingAgent || draggingGoal) {
+                    updateUIInfos();
+                }
+                // Se resetean los estados
                 draggingAgent = false;
                 draggingGoal = false;
-                dragOffsetX = 0;
-                dragOffsetY = 0;
-                view.setCursor(Cursor.getDefaultCursor());
                 view.repaint();
             }
         });
 
-        // Listener de movimiento del raton: actualiza cursor y posiciones flotantes
-        view.addMouseMotionListener(new MouseMotionAdapter() {
+        // ---------------------------------------------------------------------
+        // 3. LISTENER DE MOVIMIENTO (Feedback visual y Hover)
+        // ---------------------------------------------------------------------
+        view.addMapMouseMotionListener(new MouseMotionAdapter() {
+            
+            // Se ejecuta mientras se arrastra el raton con el boton presionado
+            // Actualiza la posicion visual flotante (double) para que el movimiento se vea suave
+            
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (draggingAgent || draggingGoal) {
                     int cs = view.getCellSize();
-                    // Calcular nueva posicion en coordenadas de celda (con offset)
-                    double x = (double)e.getY() / cs - dragOffsetX; // fila
-                    double y = (double)e.getX() / cs - dragOffsetY; // columna
+                    
+                    // Calculamos la nueva posicion exacta basada en pixeles, restando el offset inicial
+                    double newRow = (double)e.getY() / cs - dragOffsetRow;
+                    double newCol = (double)e.getX() / cs - dragOffsetCol;
 
-                    // Actualizar posicion "flotante" en la vista (sin tocar el modelo aun)
                     if (draggingAgent) {
-                        view.setAgentDoublePos(x, y);
+                        view.setAgentDoublePos(newRow, newCol);
                     } else if (draggingGoal) {
-                        view.setGoalDoublePos(x, y);
+                        view.setGoalDoublePos(newRow, newCol);
                     }
-                    view.repaint(); // Redibujar para mostrar arrastre en tiempo real
+                    // Se ejecuta constantemente para ver el movimiento suave
+                    view.repaint();
                 }
             }
-
+            
+            
+            // Se ejecuta cuando el raton se mueve 
+            // Sirve para cambiar la imagen del cursor para indicar que se puede seleccionar
             @Override
             public void mouseMoved(MouseEvent e) {
-                if (isRunning) return;
+                if (isRunning) return; // No mostrar cursor de mano si la simulacion corre
                 int cs = view.getCellSize();
-                int col = e.getX() / cs;
                 int row = e.getY() / cs;
-
-                // Cambiar cursor a ✋ si el raton esta sobre agente u objetivo
+                int col = e.getX() / cs;
+                
+                // Comprobamos si el raton esta sobre el Agente o el Goal
                 boolean overAgent = (row == model.getAgentX() && col == model.getAgentY());
                 boolean overGoal  = (row == model.getGoalX()  && col == model.getGoalY());
+                
+                // Cambiamos el cursor a MANO si esta sobre algo interactivo
                 view.setCursor(overAgent || overGoal ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) 
-                                                : Cursor.getDefaultCursor());
+                                                     : Cursor.getDefaultCursor());
             }
         });
     }
     
     // -------------------------------------------------------------------------
-    // LISTENERS DE ALTO NIVEL (interaccion con controles de la UI)
+    // LISTENERS DE ALTO NIVEL (UI Controls)
     // -------------------------------------------------------------------------
-    /**
-     * Registra listeners para componentes de la interfaz:
-     * - Boton Run/Pause: inicia/detiene la simulacion
-     * - Selector de mapas: carga un nuevo mapa
-     */
     private void createViewListeners() {
-        // Boton Run/Pause: alterna entre ejecutar y pausar la simulacion
+        // ---------------------------------------------------------------------
+        // 1. BOTÓN RUN / STOP (Control de la Simulación)
+        // ---------------------------------------------------------------------
+        
         view.addRunListener(e -> {
+            // Actua como un toggle,
+            // si el agente ya esta corriendo lo paramos y viceversa
             if (this.model.isRunning()) {
-                this.model.stop(); // Detener logica del agente
+                this.model.stop();
             } else {
-                this.model.run();  // Iniciar algoritmo de busqueda
+                this.model.run();
             }
-            this.isRunning = this.model.isRunning(); // Sincronizar estado local
+            // Sincronizamos el estado local del controlador con el del modelo
+            this.isRunning = this.model.isRunning();
+            
+            // Si corre, deshabilita el selector de mapas(false). Si para, habilita (true).
+            view.setMapSelectorEnabled(!this.isRunning);
         });
         
+        // ---------------------------------------------------------------------
+        // 2. INTERRUPTORES VISUALES (Layers del mapa)
+        // ---------------------------------------------------------------------
+        
+        // Boton para mostrar/ocultar las migajas que va dejando en cada celda que visita
         view.addShowVisitedListener(e -> {
-                    view.toggleShowVisited();
-                    view.repaint();
-                });
+            view.toggleShowVisited();
+            view.repaint();
+        });
         
+        // Boton para mostrar/ocultar la vision del agente
         view.addShowMemoryListener(e -> {
-                    view.toggleShowMemory();
-                    view.repaint();
-                });
+            view.toggleShowMemory();
+            view.repaint();
+        });
         
-        // Timer para actualizar energia, posicion y estado cada 200 ms (solo cuando corre)
-        javax.swing.Timer uiTimer = new javax.swing.Timer(1, e -> {
+        // ---------------------------------------------------------------------
+        // 3. BUCLE DE REFRESCO DE LA UI 
+        // ---------------------------------------------------------------------
+        // Usamos un Timer para comprobar el estado del modelo periodicamente
+        javax.swing.Timer uiTimer = new javax.swing.Timer(40, e -> {
+            // Solo actualizamos la vista si la simulacion esta activa
             if (isRunning) {
-                // 1. Actualizar datos del panel lateral
-                view.setActionsCount(model.getEnergyUsed());
-                view.setAgentPosition(model.getAgentX(), model.getAgentY());
-                view.setGoalReached(model.isGoalReached());
-
-                // 2. ✅ Sincronizar posicion visual flotante con la posicion entera del modelo
-                //    Esto es esencial para que el agente se vea en la celda correcta durante la ejecucion automatica
+                // A) ACTUALIZACION DE DATOS
+                // Actualizar paneles de informacion
+                updateUIInfos();
+                
+                // Sincroniza la posicion visual del agente y meta con la logica
                 view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
                 view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
 
-                // Opcional: solo repintar si hubo cambio real (mejora rendimiento)
-                // view.repaint(); // setAgentDoublePos() ya hace repaint()
+                // B) COMPROBAR SI SE ALCANZO EL GOAL
+                // Detiene la logica del agente y del controlador
+                if (model.isGoalReached()) {
+                    this.model.stop();
+                    this.isRunning = false;
+                    view.setRunButtonSelected(false);
+                    view.addLogEntry("¡OBJETIVO ALCANZADO! - Stop");
+                    view.setMapSelectorEnabled(true);
+                }
             }
         });
-        uiTimer.start(); // ⚠️ Guarda la referencia si quieres .stop() despues
-
-        // Inicializa y configura el selector de mapas
+        uiTimer.start(); 
+        
+        // Inicializar la logica del desplegable de seleccion de mapas
         initializeMapSelector();
     }
     
-    /**
-     * Configura el JComboBox de seleccion de mapas:
-     * 1. Escanea la carpeta ./maps/ en busca de archivos .txt
-     * 2. Los muestra ordenados en el combo
-     * 3. Asocia un listener para recargar el mapa seleccionado
-     */
+    private void updateUIInfos() {
+        view.setActionsCount(model.getEnergyUsed());
+        view.setAgentPosition(model.getAgentX(), model.getAgentY());
+        view.setGoalReached(model.isGoalReached());
+        view.setGoalPosition(model.getGoalX(), model.getGoalY());
+    }
+    
     private void initializeMapSelector() {
-        java.io.File dir = new java.io.File(mapsDir);
+        File dir = new File(mapsDir);
         if (dir.exists() && dir.isDirectory()) {
-            // Filtrar solo archivos .txt
             String[] maps = dir.list((d, name) -> name.endsWith(".txt"));
             if (maps != null && maps.length > 0) {
-                java.util.Arrays.sort(maps); // Orden alfabetico
-                view.setMapList(maps);       // Delegar a MainView
+                java.util.Arrays.sort(maps);
+                view.setMapList(maps);       
             } else {
                 view.setMapList(new String[]{"Ningun mapa encontrado"});
             }
@@ -297,13 +358,9 @@ public class Controller {
             view.setMapList(new String[]{"Carpeta 'maps' no encontrada"});
         }
 
-        // Listener: al seleccionar un mapa, reiniciar la simulacion con ese archivo
         view.addMapSelectorListener(e -> {
             String selectedMap = view.getSelectedMap();
-            // Evitar procesar mensajes de error como rutas
-            if (selectedMap != null &&
-                !selectedMap.equals("Ningun mapa encontrado") &&
-                !selectedMap.equals("Carpeta 'maps' no encontrada")) {
+            if (selectedMap != null && !selectedMap.contains("no encontrada")) {
                 restart(mapsDir + selectedMap);
             }
         });
@@ -311,65 +368,77 @@ public class Controller {
     
     // -------------------------------------------------------------------------
     // REINICIO Y CARGA DE MAPAS
+    // Reinicia la simulacion cargando un nuevo mapa (o recargando el actual)
+    // Se encarga de coordinar la parada segura del agente, la carga de datos
+    // y la regeneracion de la interfaz grafica
     // -------------------------------------------------------------------------
-    /**
-     * Reinicia completamente la simulacion con un nuevo mapa.
-     * - Carga el archivo de mapa
-     * - Actualiza modelo fisico (World) y logico (Environment)
-     * - Reinicia solo la vista del mapa (MatrixView), conservando el panel lateral
-     * - Sincroniza posiciones iniciales y estado UI
-     * 
-     * Importante: NO recrea InfoPanelView, para preservar listeners (selector, botones).
-     * Usa {@link MainView#resetMapView(WorldViewInterface)} para eso.
-     */
+    
     public void restart(String rutaArchivo) {
-        // ✅ Si la simulacion esta en ejecucion, detenerla ANTES de recargar
-                // ✅ Si la simulacion esta en ejecucion, detenerla ANTES de recargar
+        // ---------------------------------------------------------------------
+        // 1. PARADA DE SEGURIDAD
+        // ---------------------------------------------------------------------
+        // Si el agente esta corriendo, lo detenemos antes de cambiar el mapa  
         if (isRunning) {
-            this.model.stop();          // Detener el agente
-            this.isRunning = false;     // Estado interno
-            view.setRunButtonSelected(false); // ✅ Visualmente desmarcar el boton  
+            this.model.stop();           
+            this.isRunning = false;      
         }
-
+        
+        // ---------------------------------------------------------
+        // 2. RESETEO DEL ESTADO LOGICO (MODELO)
+        // ---------------------------------------------------------
         model.resetEnergy();
         model.clearMemory();
-        read_map(rutaArchivo);   // Carga y actualiza modelo
         
-        this.isRunning = false;  // Garantizar pausa (redundante si ya era falso, pero seguro)
+        // Cargar logica del mapa
+        read_map(rutaArchivo);   
+        
+        // Asegura que la simulacion comience en estado pausado
+        this.isRunning = false;  
 
-        // ✅ Solo reconstruir la vista del mapa, no el panel de control
+        // ---------------------------------------------------------
+        // 3. RECONSTRUCCIÓN DE LA VISTA (VIEW)
+        // ---------------------------------------------------------
+        // Pide a la vista que tire el panel del mapa viejo y cree uno nuevo 
+        // con las nuevas dimensiones (filas/columnas) leidas en read_map()
         view.resetMapView(modelWorld, model);
 
-        // Sincronizar estado inicial
+        // Resetea el estado de los botones visualmente (desmarca los botones)
+        view.resetToggles(); 
+
+        // ---------------------------------------------------------
+        // 4. SINCRONIZACIÓN VISUAL
+        // ---------------------------------------------------------
+        // Alineamos los sprites visuales (Agente y Goal) con las coordenadas 
+        // iniciales que acabamos de cargar en el modelo.
         view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
         view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
-        view.setGoalReached(model.isGoalReached());
-        view.setActionsCount(model.getEnergyUsed());
-        view.addLogEntry("Mapa reiniciado. Agente: (" + model.getAgentX() + "," + model.getAgentY() + 
-                         "), Objetivo: (" + model.getGoalX() + "," + model.getGoalY() + ")");
+        
+        // Actualizar paneles de informacion
+        updateUIInfos();
+        
+        // Añade un log 
+        String mapName = new File(rutaArchivo).getName();
+        view.addLogEntry("Mapa cargado: " + mapName);
     }
     
-    /**
-     * Lee un archivo de mapa y actualiza el modelo fisico y logico.
-     * Formato esperado:
-     *   linea 1: numero de filas (R)
-     *   linea 2: numero de columnas (C)
-     *   R lineas siguientes: C valores enteros separados por tabulaciones
-     * 
-     * Valores:
-     *   0 → celda transitable
-     *  -1 → obstaculo (pared)
-     *   >0 → costo (no usado aun)
-     * 
-     * Posiciones iniciales fijas:
-     *   Agente: (R-1, C-1) — esquina inferior derecha
-     *   Objetivo: (0, 0) — esquina superior izquierda
-     */
+    
+    
+    // Lee un archivo de texto plano para reconstruir el entorno
+    // Formato esperado:
+    // - Linea 1: Numero de filas
+    // - Linea 2: Numero de columnas
+    // - Resto: Matriz de valores separados por tabuladores.
+    
     private void read_map(String rutaArchivo) {
         try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
+            // -----------------------------------------------------------------
+            // 1. PARSEO DE LA ESTRUCTURA DEL MAPA
+            // -----------------------------------------------------------------
+            // Lee las dos primeras lineas para saber el tamaño de la matriz
             int rows = Integer.parseInt(br.readLine().trim());
             int cols = Integer.parseInt(br.readLine().trim());
 
+            // Crea la matriz temporal para leer los obstaculos (0=libre, 1=pared)
             int[][] newMap = new int[rows][cols];
             for (int i = 0; i < rows; i++) {
                 String linea = br.readLine();
@@ -378,75 +447,40 @@ public class Controller {
                     newMap[i][j] = Integer.parseInt(valores[j]);
                 }
             }
-            // Actualizar modelo fisico
+            
+            // Enviamos la estructura fisica (paredes/huecos) al modelo del Mundo
             this.modelWorld.changeMap(newMap, rows, cols);
-            // REINCIAR POSICIONES AQUI!!!--------------------------------------
-            this.model.setAgentPosition(rows-1, cols-1);
-            this.model.setGoalPosition(0,0);
             
-            // MAPAS Y SUS POSICIONES PARA LA EVALUCACION
+            // -----------------------------------------------------------------
+            // 2. DETERMINAR POSICIONES DE INICIO Y META
+            // -----------------------------------------------------------------
+            File file = new File(rutaArchivo);
+            String fileName = file.getName();
             
-            // mapWithoutObstacle.txt:
-            //this.model.setAgentPosition(49, 49);
-            //this.model.setGoalPosition(0,0);
-            // ACCIONES: 98
-            // ACCIONES ESPERADAS: 98
+            // Valores por defecto (por si no hay configuracion en posiciones.txt)
+            int startR = rows - 1, startC = cols - 1; // Esquina inferior derecha
+            int goalR = 0, goalC = 0;                 // Esquina superior izquierda
+
+            // Buscamos en nuestro mapa de configuraciones cargado previamente
+            if (mapConfigs.containsKey(fileName)) {
+                MapConfig cfg = mapConfigs.get(fileName);
+                // OJO: En el txt: X = Columna, Y = Fila.
+                // setAgentPosition(FILA, COLUMNA)
+                startR = cfg.agentY; // Fila
+                startC = cfg.agentX; // Columna
+                goalR = cfg.goalY;   // Fila
+                goalC = cfg.goalX;   // Columna
+            } else {
+                System.out.println("Configuracion no encontrada para " + fileName + ". Usando defaults.");
+            }
+
+            // Aplicamos las posiciones al entorno logico del Agente
+            this.model.setAgentPosition(startR, startC);
+            this.model.setGoalPosition(goalR, goalC);
             
-            // mapHorizontal.txt:
-            // this.model.setAgentPosition(49, 30);
-            // this.model.setGoalPosition(0,30);
-            // ACCIONES: 85
-            // ACCIONES ESPERADAS: 85
-            
-            // mapVertical.txt:
-            // this.model.setAgentPosition(25, 0);
-            // this.model.setGoalPosition(25,49);
-            // ACCIONES: 475
-            // ACCIONES ESPERADAS: 103 -----------------------------------------
-            
-            // mapTriangleBig.txt:
-            // this.model.setAgentPosition(49, 30);
-            // this.model.setGoalPosition(0,40);
-            // ACCIONES: 155
-            // ACCIONES ESPERADAS: 193
-            
-            // mapComplex1.txt:
-            // this.model.setAgentPosition(49, 30);
-            // this.model.setGoalPosition(0,40);
-            // ACCIONES: 369
-            // ACCIONES ESPERADAS: 381
-            
-            // mapComplex2.txt:
-            // this.model.setAgentPosition(49, 30);
-            // this.model.setGoalPosition(0,40);
-            // ACCIONES: 169
-            // ACCIONES ESPERADAS: 107 -----------------------------------------
-            
-            // mapComplex3.txt:
-            // this.model.setAgentPosition(17, 49);
-            // this.model.setGoalPosition(15,3);
-            // ACCIONES: 318
-            // ACCIONES ESPERADAS: 162 -----------------------------------------
-            
-            // mapComplex4.txt:
-            // this.model.setAgentPosition(27, 49);
-            // this.model.setGoalPosition(39,15);
-            // ACCIONES: 296
-            // ACCIONES ESPERADAS: 178 -----------------------------------------
-            
-            // mapComplex5.txt:
-            // this.model.setAgentPosition(49, 25);
-            // this.model.setGoalPosition(37,25);
-            // ACCIONES: 102
-            // ACCIONES ESPERADAS: 102
-            
-            // mapComplex6.txt:
-            // this.model.setAgentPosition(31, 24);
-            // this.model.setGoalPosition(34,25);
-            // ACCIONES: 286
-            // ACCIONES ESPERADAS: 176 -----------------------------------------
         } catch (IOException | NumberFormatException e) {
-            System.err.println("Error reading the file: " + e.getMessage());
+            System.err.println("Error al leer el archivo de mapa: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

@@ -25,9 +25,9 @@ public class Launcher {
         
         java.awt.EventQueue.invokeLater(() -> {
             
-            // -------------------------
-            // LANZAMOS EL MUNDO
-            // -------------------------
+            // -----------------------------------------------------------------
+            // CREAMOS EL MUNDO
+            // -----------------------------------------------------------------
             // Create an empty world
             World world = new World();
             
@@ -35,11 +35,11 @@ public class Launcher {
             Environment environment = new Environment(world);
 
             
-            // -------------------------
+            // -----------------------------------------------------------------
             // LANZAMOS EL AGENTE
-            // -------------------------
-            /* De esta forma obtenemos la instancia de ejecucion de jade para 
-            para crear nuestros propios contenedores y agentes */
+            // -----------------------------------------------------------------
+            // De esta forma obtenemos la instancia de ejecucion de jade para 
+            // para crear nuestros propios contenedores y agentes 
             jade.core.Runtime rt = jade.core.Runtime.instance();
 
             // El profile es necesario para crear el contenedor
@@ -82,21 +82,5 @@ public class Launcher {
             view.setVisible(true);
 
         });
-    }
-
-    /**
-     * Método para listar los archivos de mapas en la carpeta especificada
-     */
-    private static List<String> obtenerMapas(String carpeta) {
-        java.io.File dir = new java.io.File(carpeta);
-        java.util.List<String> mapas = new java.util.ArrayList<>();
-        if (dir.exists() && dir.isDirectory()) {
-            for (java.io.File f : dir.listFiles()) {
-                if (f.isFile() && f.getName().endsWith(".txt")) {
-                    mapas.add(f.getName());
-                }
-            }
-        }
-        return mapas;
     }
 }
