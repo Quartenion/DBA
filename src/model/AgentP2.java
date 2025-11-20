@@ -431,7 +431,7 @@ public class AgentP2 extends Agent {
 
         // Imprime informacion especifica cuando ocurre un choque y entra en modo pared
         private void printHitDebug(String decision, boolean antiLoopTriggered) {
-            System.out.println("  [GREEDY] ❌ Bloqueado → cambio a WALL_FOLLOW");
+            System.out.println("  [GREEDY] ❌ Bloqueado -> cambio a WALL_FOLLOW");
             System.out.println("    -> wallToFollow = " + wallToFollow + " (" + dirName(wallToFollow) + ")");
             System.out.println("    -> useLeftHand = " + useLeftHand + (antiLoopTriggered ? " [CAMBIADO por anti-loop]" : ""));
             System.out.println("    -> Decision inicial de pared: " + decision);
@@ -439,7 +439,7 @@ public class AgentP2 extends Agent {
 
         // Imprime la linea de resumen de decision al final de la fase de pensamiento
         private void printDecisionLog(String logMessage, double currentDist) {
-            System.out.println("  → Log: [" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
+            System.out.println("  -> Log: [" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
         }
         
         // Reinicia todas las variables de estado y heuristicas
