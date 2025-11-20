@@ -72,7 +72,6 @@ public class AgentP2 extends Agent {
         // HEURISTICAS ANTI-BUCLE ----------------------------------------------
         private String lastCollisionPos = null;
         private int collisionCountAtPos = 0;
-        private double bestDistanceEver = Double.MAX_VALUE;
 
         // DEBUGGING -----------------------------------------------------------
         private int wallStartX = -1;
@@ -80,7 +79,6 @@ public class AgentP2 extends Agent {
 
         public reactiveAgentBehaviour(Agent a, long period){
             super(a, period);
-            bestDistanceEver = Double.MAX_VALUE;
         }
         
         @Override
@@ -257,15 +255,11 @@ public class AgentP2 extends Agent {
             }
 
             // Si ya chocamos 2+ veces EN ESTA MISMA CASILLA -> romper simetria
-            if (collisionCountAtPos >= 2 && currentDist >= bestDistanceEver - 0.5) {
+            if (collisionCountAtPos >= 2) {
                 useLeftHand = !useLeftHand; // Cambiar mano
                 return true;
             }
 
-            // Actualizar mejor distancia global
-            if (currentDist < bestDistanceEver) {
-                bestDistanceEver = currentDist;
-            }
             return false;
         }
         
@@ -422,7 +416,6 @@ public class AgentP2 extends Agent {
                 System.out.println("    -> wallToFollow: " + wallToFollow + " (" + dirName(wallToFollow) + ")");
                 System.out.println("    -> useLeftHand: " + useLeftHand);
                 System.out.println("    -> hitDistance (al chocar): " + String.format("%.3f", hitDistance));
-                System.out.println("    -> bestDistanceEver: " + String.format("%.3f", bestDistanceEver));
                 if (wallStartX != -1) {
                     System.out.println("    -> Pared iniciada en: (" + wallStartX + "," + wallStartY + ")");
                 }
@@ -460,7 +453,6 @@ public class AgentP2 extends Agent {
             // 4. Reiniciar Heuristicas Anti-Bucle
             this.lastCollisionPos = null;
             this.collisionCountAtPos = 0;
-            this.bestDistanceEver = Double.MAX_VALUE;
             
             // 5. Reiniciar Debugging
             this.wallStartX = -1;
