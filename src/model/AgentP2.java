@@ -57,8 +57,6 @@ public class AgentP2 extends Agent {
     class reactiveAgentBehaviour extends TickerBehaviour {
         
         private int tickCount = 0;
-        // Para recordar si en el tick anterior estabamos corriendo o parados
-        private boolean wasRunning = false;
         
         // MAQUINA DE ESTADOS --------------------------------------------------
         private enum Mode { GREEDY, WALL_FOLLOW }
@@ -86,16 +84,14 @@ public class AgentP2 extends Agent {
             boolean isRunning = ((AgentP2) myAgent).isRunning();
             
             // DETECCIÓN DE REINICIO (Flanco de subida)
-            // Si ahora estamos corriendo, pero en el último tick estábamos parados,
+            // Si ahora estamos corriendo, pero en el ultimo tick estábamos parados,
             // significa que el usuario le ha dado a "RUN" de nuevo (posiblemente mapa nuevo).
-            if (isRunning && !wasRunning) {
+            if (model.isMapChanged()) {
                 resetMemory();
+                model.setMapChanged(false);
             }
-            
-            // Actualizamos el estado para el siguiente tick
-            this.wasRunning = isRunning;
 
-            // Si no está corriendo, salimos (pero ya hemos actualizado wasRunning)
+            // Si no está corriendo, salimos
             if (!isRunning) return;
             
             
