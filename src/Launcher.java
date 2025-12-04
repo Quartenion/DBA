@@ -13,8 +13,8 @@ import jade.wrapper.StaleProxyException;
 import model.AgentP2;
 import model.Environment;
 import model.World;
+import model.WorldPerceptionInterface;
 
-import java.util.List;
 
 public class Launcher {
 
@@ -31,8 +31,11 @@ public class Launcher {
             // Create an empty world
             World world = new World();
             
+            WorldPerceptionInterface worldPerceptionInterface = 
+                                            new WorldPerceptionInterface(world);
+            
             // Create the agent model
-            Environment environment = new Environment(world);
+            Environment environment = new Environment(worldPerceptionInterface);
 
             
             // -----------------------------------------------------------------
