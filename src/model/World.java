@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class World implements WorldViewInterface, WorldPerceptionInterface {
+public class World implements WorldViewInterface {
     
     private int[][] map;
     private int rows;
@@ -36,13 +36,11 @@ public class World implements WorldViewInterface, WorldPerceptionInterface {
     public boolean empty() { return (this.map == null || this.map.length == 0); }
     
     
-    // Perception (WorldPerceptionInterface) TODO: percieve()
     /**
      * @param pos currentPos of the element
      * @param sensors sensors that indicate the elements to percieve
      * @return map with each sensor with a tile, in case it was valid
      */
-    @Override
     public Map<RelativePos,Integer> percieve(RelativePos pos, ArrayList<RelativePos> sensors){
         Map<RelativePos, Integer> result = new HashMap<>();
        

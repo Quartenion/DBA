@@ -33,6 +33,7 @@ public class Environment {
     private final Set<String> visitedCells;
     private final Set<String> seenCells;
     private final Map<String, Integer> visitCountMap; 
+    private boolean mapChanged = false;
 
     public Environment(WorldPerceptionInterface w) {
         this.visitedCells = new HashSet<>();
@@ -195,5 +196,15 @@ public class Environment {
         counts[2] = getVisitCount(agentX + 1, agentY); // DOWN
         counts[3] = getVisitCount(agentX, agentY - 1); // LEFT
         return counts;
+    }
+    
+    // DETECCION DE CAMBIO DE MAPA
+
+    public boolean isMapChanged() {
+        return mapChanged;
+    }
+
+    public void setMapChanged(boolean mapChanged) {
+        this.mapChanged = mapChanged;
     }
 }

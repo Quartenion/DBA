@@ -57,8 +57,6 @@ public class AgentP2 extends Agent {
     class reactiveAgentBehaviour extends TickerBehaviour {
         
         private int tickCount = 0;
-        // Para recordar si en el tick anterior estabamos corriendo o parados
-        private boolean wasRunning = false;
         
         // MAQUINA DE ESTADOS --------------------------------------------------
         private enum Mode { GREEDY, WALL_FOLLOW }
@@ -72,7 +70,6 @@ public class AgentP2 extends Agent {
         // HEURISTICAS ANTI-BUCLE ----------------------------------------------
         private String lastCollisionPos = null;
         private int collisionCountAtPos = 0;
-        private double bestDistanceEver = Double.MAX_VALUE;
 
         // DEBUGGING -----------------------------------------------------------
         private int wallStartX = -1;
@@ -80,7 +77,6 @@ public class AgentP2 extends Agent {
 
         public reactiveAgentBehaviour(Agent a, long period){
             super(a, period);
-            bestDistanceEver = Double.MAX_VALUE;
         }
         
         @Override
@@ -88,16 +84,14 @@ public class AgentP2 extends Agent {
             boolean isRunning = ((AgentP2) myAgent).isRunning();
             
             // DETECCIÓN DE REINICIO (Flanco de subida)
-            // Si ahora estamos corriendo, pero en el último tick estábamos parados,
+            // Si ahora estamos corriendo, pero en el ultimo tick estábamos parados,
             // significa que el usuario le ha dado a "RUN" de nuevo (posiblemente mapa nuevo).
-            if (isRunning && !wasRunning) {
+            if (model.isMapChanged()) {
                 resetMemory();
+                model.setMapChanged(false);
             }
-            
-            // Actualizamos el estado para el siguiente tick
-            this.wasRunning = isRunning;
 
-            // Si no está corriendo, salimos (pero ya hemos actualizado wasRunning)
+            // Si no está corriendo, salimos
             if (!isRunning) return;
             
             
@@ -257,15 +251,11 @@ public class AgentP2 extends Agent {
             }
 
             // Si ya chocamos 2+ veces EN ESTA MISMA CASILLA -> romper simetria
-            if (collisionCountAtPos >= 2 && currentDist >= bestDistanceEver - 0.5) {
+            if (collisionCountAtPos >= 2) {
                 useLeftHand = !useLeftHand; // Cambiar mano
                 return true;
             }
 
-            // Actualizar mejor distancia global
-            if (currentDist < bestDistanceEver) {
-                bestDistanceEver = currentDist;
-            }
             return false;
         }
         
@@ -422,7 +412,6 @@ public class AgentP2 extends Agent {
                 System.out.println("    -> wallToFollow: " + wallToFollow + " (" + dirName(wallToFollow) + ")");
                 System.out.println("    -> useLeftHand: " + useLeftHand);
                 System.out.println("    -> hitDistance (al chocar): " + String.format("%.3f", hitDistance));
-                System.out.println("    -> bestDistanceEver: " + String.format("%.3f", bestDistanceEver));
                 if (wallStartX != -1) {
                     System.out.println("    -> Pared iniciada en: (" + wallStartX + "," + wallStartY + ")");
                 }
@@ -431,7 +420,7 @@ public class AgentP2 extends Agent {
 
         // Imprime informacion especifica cuando ocurre un choque y entra en modo pared
         private void printHitDebug(String decision, boolean antiLoopTriggered) {
-            System.out.println("  [GREEDY] ❌ Bloqueado → cambio a WALL_FOLLOW");
+            System.out.println("  [GREEDY] ❌ Bloqueado -> cambio a WALL_FOLLOW");
             System.out.println("    -> wallToFollow = " + wallToFollow + " (" + dirName(wallToFollow) + ")");
             System.out.println("    -> useLeftHand = " + useLeftHand + (antiLoopTriggered ? " [CAMBIADO por anti-loop]" : ""));
             System.out.println("    -> Decision inicial de pared: " + decision);
@@ -439,7 +428,7 @@ public class AgentP2 extends Agent {
 
         // Imprime la linea de resumen de decision al final de la fase de pensamiento
         private void printDecisionLog(String logMessage, double currentDist) {
-            System.out.println("  → Log: [" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
+            System.out.println("  -> Log: [" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
         }
         
         // Reinicia todas las variables de estado y heuristicas
@@ -460,7 +449,6 @@ public class AgentP2 extends Agent {
             // 4. Reiniciar Heuristicas Anti-Bucle
             this.lastCollisionPos = null;
             this.collisionCountAtPos = 0;
-            this.bestDistanceEver = Double.MAX_VALUE;
             
             // 5. Reiniciar Debugging
             this.wallStartX = -1;

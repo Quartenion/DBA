@@ -362,6 +362,7 @@ public class Controller {
             String selectedMap = view.getSelectedMap();
             if (selectedMap != null && !selectedMap.contains("no encontrada")) {
                 restart(mapsDir + selectedMap);
+                model.setMapChanged(true);
             }
         });
     }
