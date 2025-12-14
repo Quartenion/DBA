@@ -10,7 +10,7 @@ import jade.core.ProfileImpl;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
-import model.AgentP2;
+import model.AgentP3;
 import model.Environment;
 import model.World;
 import model.WorldPerceptionInterface;
@@ -55,7 +55,7 @@ public class Launcher {
 
             try {
                 // Crear y lanzar el agente
-                AgentController acHW = cc.createNewAgent("Agente", AgentP2.class.getCanonicalName(), 
+                AgentController acHW = cc.createNewAgent("Agente", AgentP3.class.getCanonicalName(), 
                                         new Object[]{environment});
                 acHW.start();
 
