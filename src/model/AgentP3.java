@@ -12,7 +12,7 @@ import java.util.Map;
  // Implementa un algoritmo de navegacion tipo Bug Algorithm
  // con mejoras heuristicas para evitar bucles infinitos y movimientos redundantes
  
-public class AgentP2 extends Agent {
+public class AgentP3 extends Agent {
 
     private Environment model;
     private final int ACTION_TIME = 50; // Tiempo entre ticks
@@ -81,7 +81,7 @@ public class AgentP2 extends Agent {
         
         @Override
         public void onTick(){
-            boolean isRunning = ((AgentP2) myAgent).isRunning();
+            boolean isRunning = ((AgentP3) myAgent).isRunning();
             
             // DETECCIÓN DE REINICIO (Flanco de subida)
             // Si ahora estamos corriendo, pero en el ultimo tick estábamos parados,
@@ -100,7 +100,7 @@ public class AgentP2 extends Agent {
             // -----------------------------------------------------------------
             // 1. PERCEPCION
             // -----------------------------------------------------------------
-            ((AgentP2) myAgent).changeState(State.SEE);
+            ((AgentP3) myAgent).changeState(State.SEE);
             
             Map<RelativePos,Integer> perception = model.perceive(sensors);
             int[] goalDir = model.getDirectionToGoal(); 
@@ -112,7 +112,7 @@ public class AgentP2 extends Agent {
             // -----------------------------------------------------------------
             // 2. PENSAMIENTO (DECISION)
             // -----------------------------------------------------------------
-            ((AgentP2) myAgent).changeState(State.THINK);
+            ((AgentP3) myAgent).changeState(State.THINK);
             
             String decision = "BLOCKED";
             String logMessage = ""; // Variable para traza de depuracion
@@ -120,7 +120,7 @@ public class AgentP2 extends Agent {
             // A. Verificar si hemos llegado
             if (model.isGoalReached()) {
                 System.out.println("!!! OBJETIVO ALCANZADO !!!");
-                ((AgentP2) myAgent).changeState(State.STANDBY);
+                ((AgentP3) myAgent).changeState(State.STANDBY);
                 model.stop();
                 return;
             }
@@ -231,7 +231,7 @@ public class AgentP2 extends Agent {
                 System.out.println("  Decision = BLOCKED");
             }
             
-            ((AgentP2) myAgent).changeState(State.ACTION);
+            ((AgentP3) myAgent).changeState(State.ACTION);
         }
 
         // =========================================================================
@@ -455,7 +455,7 @@ public class AgentP2 extends Agent {
             this.wallStartY = -1;
             
             // 6. Reiniciar variable de la clase externa (AgentP2)
-            AgentP2.this.lastMove = null; 
+            AgentP3.this.lastMove = null; 
         }
     }
 }

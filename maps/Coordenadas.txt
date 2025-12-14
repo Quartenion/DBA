@@ -1,4 +1,4 @@
-Mapa sin obstáculos
+100x100-sinObstaculos.txt
 
 Coordenadas renos:
 * 5,7
@@ -16,7 +16,7 @@ Coordenadas Santa:
 Coordenadas iniciales agente:
 * 99,99
 
-Mapa con obstáculos
+100x100-conObstaculos.txt
 
 Coordenadas renos:
 * 11,12

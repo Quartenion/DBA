@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import model.Environment;
@@ -28,7 +29,8 @@ public class Controller {
     private MainView view;            
     private World modelWorld;         
     private final String mapsDir = "./maps/"; 
-    private final String configFilePath = "./maps/posiciones.txt"; 
+    private final String configFilePath = "./maps/posiciones.txt";
+    private final String configFileP3Path = "./maps/Coordenadas.txt";
     
     private Environment model;        
     private ContainerController cc;   
@@ -56,6 +58,25 @@ public class Controller {
             this.goalY = gy;  // Fila
         }
     }
+    
+    // Clase interna que extiende de la configuración de los mapas de la P2
+    // y sirve para añadir los flags e info necesaria para la P3
+    // Se puede inicializar el goal a -1 y se irán cambiando por los de los
+    // renos
+    private static class MapConfigP3 extends MapConfig {
+        ArrayList<Pair<Integer,Integer>> coordRenos = new ArrayList<>();
+        Pair<Integer,Integer> coordSanta;
+        
+        public MapConfigP3(int ax, int ay, int gx, int gy, 
+                Pair<Integer,Integer> coordSanta, ArrayList<Pair<Integer,Integer>> coordRenos){
+            
+            super(ax,ay,gx,gy);
+            
+            this.coordSanta = coordSanta;
+            this.coordRenos = coordRenos;
+        }
+    }
+    
     
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
@@ -111,6 +132,40 @@ public class Controller {
             System.err.println("Error leyendo " + configFilePath + ": " + e.getMessage());
         }
     }
+    
+    /**
+     * Lee el archivo de Coordenadas.txt
+     * 
+     * ARCHIVO DE CONFIGURACIÓN PARA LA PRÁCTICA 3
+     * Contiene toda la información de: 
+     *  coordenadas de los renos
+     *  coordenadas de santa
+     *  coordenadas iniciales
+     * 
+     * Para cada uno de los mapas relevantes
+     * 
+     * Hacer que el programa compruebe primero si es uno de los mapas de la P2
+     * en caso de que no esté en la configuración el mapa que mire en la estructura
+     * que genera esta función.
+     * 
+     */
+    private void loadP3configurations() {
+        File configFile = new File(configFileP3Path);
+        if (!configFile.exists()) {
+            System.err.println("AVISO: No se encontro " + configFileP3Path + ". que es la configuración para la P3, se cierra el programa");
+            closeApp();
+        }
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(configFile))) {
+            // Leemos el archivo de configuración para la 
+        
+        } catch (IOException e) {
+            System.err.println("Error leyendo " + configFilePath + ": " + e.getMessage());
+            closeApp();
+        }
+        
+    }
+
 
     // -------------------------------------------------------------------------
     // LISTENERS DE BAJO NIVEL (Mouse & Window)
@@ -484,4 +539,22 @@ public class Controller {
             e.printStackTrace();
         }
     }
+    
+        
+    /**
+     * Used to close the app when santa is a 
+     * scumbag or when the config is not right
+     */
+    private void closeApp() {
+        try {
+                // Cierra el ContainerController de JADE
+                // para evitar que queden procesos huerfanos en memoria
+                if (cc != null) cc.kill(); 
+            } catch (ControllerException ex) {
+                ex.printStackTrace();
+            }
+        view.dispose();
+        System.exit(0);
+    }
+    
 }
