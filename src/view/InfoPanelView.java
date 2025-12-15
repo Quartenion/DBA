@@ -33,7 +33,7 @@ public class InfoPanelView extends JPanel {
      // Constructor principal. Configura el layout y los estilos base
     public InfoPanelView() {
         setLayout(new GridBagLayout());
-        setPreferredSize(new Dimension(300, 600));
+        setPreferredSize(new Dimension(700, 600));
         setBackground(new Color(245, 245, 245));
         setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.GRAY), "Panel de Información"));
@@ -145,7 +145,7 @@ public class InfoPanelView extends JPanel {
         logList = new JList<>(logModel);
         logList.setVisibleRowCount(5);
         logList.setBackground(new Color(255, 250, 240));
-        logList.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        logList.setFont(new Font("Arial", Font.PLAIN, 16));
         logList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         JScrollPane scrollPane = new JScrollPane(logList);
@@ -184,7 +184,7 @@ public class InfoPanelView extends JPanel {
     // Añade una entrada al log, manteniendo un maximo de 20 registros
     public void addLogEntry(String entry) {
         logModel.add(0, entry); // Añadir al principio
-        if (logModel.size() > 20) {
+        if (logModel.size() > 30) {
             logModel.remove(logModel.size() - 1); // Eliminar el mas antiguo
         }
         // Asegurar que se vea el ultimo elemento añadido (arriba)

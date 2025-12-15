@@ -10,4 +10,5 @@ public enum State {
     SEE,
     THINK,
     ACTION,
+    END_WORLD
 }

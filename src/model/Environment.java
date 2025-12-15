@@ -1,5 +1,7 @@
 package model;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,12 +36,18 @@ public class Environment {
     private final Set<String> seenCells;
     private final Map<String, Integer> visitCountMap; 
     private boolean mapChanged = false;
+    
+    
+    // Para manejar listeners
+    private PropertyChangeSupport support = null;
 
     public Environment(WorldPerceptionInterface w) {
         this.visitedCells = new HashSet<>();
         this.seenCells = new HashSet<>();
         this.visitCountMap = new HashMap<>();
         this.world = w;
+        
+        this.support = new PropertyChangeSupport(this);
     }
     
     // -------------------------------------------------------------------------
@@ -50,8 +58,19 @@ public class Environment {
     public synchronized void run()  { if (!run) run = true; }
     public synchronized boolean isRunning() { return run; }
     
+    // Cambiar el estado
     public void changeState(State s) {
+        State oldState = this.state;
         this.state = s;
+        
+        // Lanzamos el cambio a los que escuchan
+        support.firePropertyChange("state", oldState, this.state);
+    }
+    
+    // Método para que el Controller se pueda suscribir y hacer patrón
+    // observer
+    public void addPropertyChangeListener(PropertyChangeListener pcl) {
+        support.addPropertyChangeListener(pcl);
     }
 
     // -------------------------------------------------------------------------

@@ -4,6 +4,8 @@ import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ElfTranslatorAgent extends Agent {
 
@@ -34,7 +36,7 @@ public class ElfTranslatorAgent extends Agent {
                     // Sacamos el contenido
                     String content = translateMSG.getContent();
                     System.out.println("=== ElfTranslator recibe mensaje REQUEST: (|" + content + "|)");
-
+                    
                     // Validamos el agente
                     String[] parts = content.trim().split("\\s+"); // Split por espacios
                     
@@ -96,6 +98,13 @@ public class ElfTranslatorAgent extends Agent {
                     translateReply.setContent("Error interno: " + e.getMessage());
                 }
 
+                // DEBUG SIMULATOR
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(ElfTranslatorAgent.class.getName()).log(Level.SEVERE, null, ex);
+                }
+               
                 // Enviar respuesta
                 myAgent.send(translateReply);
             }

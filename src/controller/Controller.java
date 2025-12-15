@@ -12,6 +12,8 @@ import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import model.Environment;
+import model.State;
 import model.World;
 import view.MainView;
 
@@ -263,7 +266,20 @@ public class Controller {
                 System.exit(0);
             }
         });
+        
+        // Observador para cerrar la app
+        model.addPropertyChangeListener(new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent evt){
+                State newState = (State) evt.getNewValue();
                 
+                // En caso de que se acabe el mundo cerramos la aplicación
+                if (State.END_WORLD.equals(newState)){
+                    closeApp();
+                }
+            }
+        });
+        
         // Listener de click directo al Panel del mapa
         view.addMapMouseListener(new MouseAdapter() {
             @Override

@@ -2,11 +2,18 @@
 package model;
 
 import jade.core.Agent;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.core.AID;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
+import jade.domain.FIPAException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 // Agente Reactivo P2.
 // Implementa un algoritmo de navegacion tipo Bug Algorithm
@@ -16,6 +23,15 @@ import java.util.Map;
  * Agente Reactivo-Comunicativo P3.
  * 
  * Comportamiento ahora:
+ *  One shot behaviour que haga una función que sea traducir la solicitud para jugar
+ *  Luego el comportamiento envía PROPOSE a santa y en caso de ser
+ *  aceptado empieza el bucle de ejecución, que consiste en que 
+ *  se pregunta a rudolph el siguiente reno, se recoge y se pone que es la goal,
+ *  se va hasta allí y se repite el bucle.
+ *  Cuando están todos los renos se coloca una variable y se hace
+ *  comunicación con santa.
+ *  Se vuelve al ticker behaviour para ir a santa y se termina la ejecución
+ *  
  *  
  * 
  */
@@ -26,6 +42,13 @@ public class AgentP3 extends Agent {
     private final int ACTION_TIME = 50; // Tiempo entre ticks
     private String lastMove = null;      // Guarda la ultima accion efectiva ("UP", "DOWN", etc...)
                                          // Sirve para evitar que se realice una accion completamente opuesta
+   
+    // Usamos IDs únicos de comunicación para cada uno de los agentes ya
+    // que solo tendrá una vía abierta al mismo tiempo con cada uno de ellos
+    private final String TRASLATION_ID = "traslation_elf_";
+    private final String SANTA_MSG_ID  = "santa_";
+    private final String RUDOLPH_REINDEER_ID = "reindeer_";
+    
     
     // Configuración de sensores: 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
     private final ArrayList<RelativePos> sensors = new ArrayList<>(List.of(
@@ -38,6 +61,7 @@ public class AgentP3 extends Agent {
     @Override
     protected void setup(){
         // 1. Recuperacion de argumentos (El entorno)
+        
         Object[] args = getArguments();
         if (args != null && args.length > 0 && args[0] instanceof Environment) {
             this.model = (Environment) args[0];
@@ -46,6 +70,7 @@ public class AgentP3 extends Agent {
         }
         
         // 2. Añadir comportamiento principal
+        addBehaviour(new startSearchBehaviour());
         addBehaviour(new reactiveAgentBehaviour(this, ACTION_TIME));
         System.out.println("=== SetUp completado agente AgentP3 ===");
     }
@@ -59,6 +84,62 @@ public class AgentP3 extends Agent {
     public boolean isRunning(){ return this.model.isRunning(); }
     public void changeState(State s){ this.model.changeState(s); }
     
+    
+     
+    /**
+     * NEW : startSearchBehaviour OneShotBehaviour 
+     * 
+     * @brief Este comportamiento se añade al principio de la ejecución
+     *        para así realizar la primera traducción y comunicación
+     *        con Santa para empezar la ejecución.
+     */
+    class startSearchBehaviour extends OneShotBehaviour {
+        
+        @Override
+        public void action() {
+            System.out.println("===Comienza el startSearch del AgentP3===");
+            
+            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME)); 
+            msg.setConversationId(TRASLATION_ID);
+            msg.setContent("Bro propuesta a comenzar ejecución "
+                                               + "de rescate de renos, en plan");
+            myAgent.send(msg);
+            System.out.println("Enviado REQUEST de traducir\n");
+            
+            ACLMessage response = myAgent.blockingReceive();
+            
+            System.out.println("Recibido RESPONSE de traducir\n");
+            
+            try {             
+                // Administración de errores
+                if (!response.getConversationId().equals(TRASLATION_ID)){
+                    throw new FIPAException("Por alguna razón el AgentP3 recibe"
+                            + " un mensaje de otro ID cuando espera la traducción " 
+                            + response.getContent());
+                }
+
+                if (response.getPerformative() != ACLMessage.INFORM){
+                    throw new FIPAException("Agente P3 no ha recibido INFORM, probablemente"
+                            + " haya recibido un refuse por error en el formato del mensaje: " 
+                            + response.getContent());
+                }
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+                
+                System.out.println("\n\nMensaje verificado por agente: " + response.getContent() +
+                                   " terminando la ejecución del comportamiento y ahora se puede mover"
+                                 + " normal\n\n");
+            }
+            catch (FIPAException e){
+                System.err.println("Error en la ejecución: " + e.getMessage());
+                model.changeState(State.END_WORLD); // Terminamos la ejecución
+            } catch (InterruptedException ex) {
+                Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
     
     // Comportamiento ciclico del agente
     // Estructura: PERCEPCION -> PENSAMIENTO  -> ACCION
