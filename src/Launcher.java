@@ -1,6 +1,5 @@
 import view.MainView;
 import controller.Controller;
-import elfo.ElfTranslatorAgent;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.wrapper.AgentController;
@@ -10,6 +9,9 @@ import model.AgentP3;
 import model.Environment;
 import model.World;
 import model.WorldPerceptionInterface;
+
+
+import elfo.ElfTranslatorAgent;
 
 
 public class Launcher {
@@ -57,7 +59,7 @@ public class Launcher {
                                         new Object[]{environment});
                 
                 AgentController acE = cc.createNewAgent("ElfTranslator", 
-                                        ElfTranslatorAgent.class.getCanonicalName(), 
+                                        .class.getCanonicalName(), 
                                         null);
                 /*
                 AgentController acS = cc.createNewAgent("AgentP3", 
