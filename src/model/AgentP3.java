@@ -8,9 +8,17 @@ import java.util.List;
 import java.util.Map;
 
 
- // Agente Reactivo P2.
- // Implementa un algoritmo de navegacion tipo Bug Algorithm
- // con mejoras heuristicas para evitar bucles infinitos y movimientos redundantes
+// Agente Reactivo P2.
+// Implementa un algoritmo de navegacion tipo Bug Algorithm
+// con mejoras heuristicas para evitar bucles infinitos y movimientos redundantes
+
+/**
+ * Agente Reactivo-Comunicativo P3.
+ * 
+ * Comportamiento ahora:
+ *  
+ * 
+ */
  
 public class AgentP3 extends Agent {
 
@@ -39,12 +47,12 @@ public class AgentP3 extends Agent {
         
         // 2. Añadir comportamiento principal
         addBehaviour(new reactiveAgentBehaviour(this, ACTION_TIME));
-        System.out.println("=== Agente iniciado ===");
+        System.out.println("=== SetUp completado agente AgentP3 ===");
     }
     
     @Override
     public void takeDown(){
-        System.out.println("=== Terminando agente ===");
+        System.out.println("=== Terminando agente AgentP3 ===");
     }
     
     // Metodos puente para acceder al modelo -----------------------------------

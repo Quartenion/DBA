@@ -1,10 +1,6 @@
-/**
- *
- * @author Group_7_DBA
- */
-
 import view.MainView;
 import controller.Controller;
+import elfo.ElfTranslatorAgent;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.wrapper.AgentController;
@@ -39,7 +35,7 @@ public class Launcher {
 
             
             // -----------------------------------------------------------------
-            // LANZAMOS EL AGENTE
+            // LANZAMOS LOS AGENTES
             // -----------------------------------------------------------------
             // De esta forma obtenemos la instancia de ejecucion de jade para 
             // para crear nuestros propios contenedores y agentes 
@@ -52,11 +48,31 @@ public class Launcher {
 
             // Creamos el controlador de Main container
             ContainerController cc = rt.createMainContainer(p);
+            
 
             try {
-                // Crear y lanzar el agente
-                AgentController acHW = cc.createNewAgent("Agente", AgentP3.class.getCanonicalName(), 
+                // Creamos los agentes (Enviroment is only sent to AgentP3)
+                AgentController acHW = cc.createNewAgent("AgentP3", 
+                                        AgentP3.class.getCanonicalName(), 
                                         new Object[]{environment});
+                
+                AgentController acE = cc.createNewAgent("ElfTranslator", 
+                                        ElfTranslatorAgent.class.getCanonicalName(), 
+                                        null);
+                /*
+                AgentController acS = cc.createNewAgent("AgentP3", 
+                                        AgentP3.class.getCanonicalName(), 
+                                        new Object[]{environment});
+                
+                AgentController acR = cc.createNewAgent("AgentP3", 
+                                        AgentP3.class.getCanonicalName(), 
+                                        new Object[]{environment});
+                */
+                
+                // Lanzamos los agentes ElfTranslator - Santa - Rudolph - AgentP3
+                acE.start();
+                // acS.start();
+                // acR.start();
                 acHW.start();
 
             } catch (StaleProxyException ex) {
