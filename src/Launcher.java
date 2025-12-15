@@ -59,7 +59,7 @@ public class Launcher {
                                         new Object[]{environment});
                 
                 AgentController acE = cc.createNewAgent("ElfTranslator", 
-                                        .class.getCanonicalName(), 
+                                        ElfTranslatorAgent.class.getCanonicalName(), 
                                         null);
                 /*
                 AgentController acS = cc.createNewAgent("AgentP3", 
