@@ -89,11 +89,26 @@ public class Controller {
         
         // 1. Cargar configuraciones desde el txt
         loadMapConfigurations();
+        loadP3configurations();
         
         createEventListeners();
         createViewListeners(); 
     }
 
+    
+    /**
+     * Lee líneas del buffer hasta encontrar una línea que no está vacía
+     */
+    private static String readNextTextLine(BufferedReader br) throws IOException {
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (!line.trim().isEmpty()) {
+                return line;
+            }
+        }
+        return null;
+    }
+    
     /**
      * Lee el archivo posiciones.txt y carga los datos en memoria
      */
@@ -157,8 +172,69 @@ public class Controller {
         }
         
         try (BufferedReader br = new BufferedReader(new FileReader(configFile))) {
-            // Leemos el archivo de configuración para la 
-        
+            String line;
+
+            // Encontramos mapa
+            while ((line = readNextTextLine(br)) != null) {
+                
+                // Sacamos filename
+                String filename = line.trim();
+                System.out.println("Processing Map: " + filename);
+
+                // Quitamos la cabecera de los renos
+                readNextTextLine(br); 
+
+                // Leemos las coordenadas de los renos renos
+                ArrayList<Pair<Integer, Integer>> renosTemp = new ArrayList<>();
+                while ((line = br.readLine()) != null && !line.trim().isEmpty()) {
+                    // Sacamos la línea
+                    String cleanLine = line.replace("*", "").trim();
+                    String[] partes = cleanLine.split(",");
+                    
+                    // Añadimos
+                    renosTemp.add(new Pair<>(
+                        Integer.valueOf(partes[0].trim()), 
+                        Integer.valueOf(partes[1].trim())
+                    ));
+                }
+
+                // Consumimos cabecera santa
+                readNextTextLine(br); 
+                
+                // Leemos la coordenada de santa
+                Pair<Integer,Integer> coordSanta = new Pair<Integer,Integer>(-1,-1);
+                line = readNextTextLine(br);
+                if (line != null) {
+                    String cleanLine = line.replace("*", "").trim();
+                    String[] partes = cleanLine.split(",");
+                    coordSanta.first  = Integer.valueOf(partes[0].trim());
+                    coordSanta.second = Integer.valueOf(partes[1].trim());
+                }
+                
+                
+                // Consumismos cabecera agente
+                readNextTextLine(br);
+                
+                // Leemos la coordenada de agente
+                Integer ax = -2; // junk value
+                Integer ay = -2; // junk value
+                line = readNextTextLine(br);
+                if (line != null) {
+                    String cleanLine = line.replace("*", "").trim();
+                    String[] partes = cleanLine.split(",");
+                    ax = Integer.valueOf(partes[0].trim());
+                    ay = Integer.valueOf(partes[1].trim());
+                }
+                
+                // Creamos la configuración asociada al filename
+                MapConfigP3 config = new MapConfigP3(ax, ay, -1, -1, coordSanta, renosTemp);
+                System.out.println(" -> Loaded: " + filename + " | Agent: " + ax + "," + ay 
+                                            + " | Reindeers: " + renosTemp.size());
+                
+                // Colocamos configuración en el map
+                mapConfigs.put(filename, config);
+            }
+            
         } catch (IOException e) {
             System.err.println("Error leyendo " + configFilePath + ": " + e.getMessage());
             closeApp();
