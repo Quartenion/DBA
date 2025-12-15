@@ -4,6 +4,6 @@ package santa;
  *
  * 
  */
-public class santaAgent {
+public class SantaAgent {
     
 }

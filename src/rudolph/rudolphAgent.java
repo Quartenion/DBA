@@ -4,6 +4,6 @@ package rudolph;
  *
  * 
  */
-public class rudolphAgent {
+public class RudolphAgent {
     
 }

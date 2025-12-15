@@ -1,4 +1,4 @@
-package dba.agentes; // Asegúrate de que el paquete es correcto (el tuyo puede ser solo 'elfo' o 'dba')
+package elfo;
 
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
