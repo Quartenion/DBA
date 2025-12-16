@@ -22,8 +22,8 @@ import java.util.List;
 public class Environment {
     
     // Variables de Posicion 
-    private int agentX;
-    private int agentY;
+    private int agentR;
+    private int agentC;
     private int goalX;
     private int goalY;
     
@@ -88,18 +88,18 @@ public class Environment {
     // GETTERS Y SETTERS DE POSICIÓN 
     // -------------------------------------------------------------------------
 
-    public synchronized int getAgentX() { return agentX; }
-    public synchronized int getAgentY() { return agentY; }
+    public synchronized int getAgentX() { return agentR; }
+    public synchronized int getAgentY() { return agentC; }
     
     
     // Actualiza la posicion del agente y registra automaticamente la visita
    
-    public synchronized void setAgentPosition(int x, int y) {
-        this.agentX = x;
-        this.agentY = y;
+    public synchronized void setAgentPosition(int r, int c) {
+        this.agentR = r;
+        this.agentC = c;
         // Actualiza memoria inmediatamente
-        addVisitedCell(x, y);
-        addSeenCell(x, y);
+        addVisitedCell(r, c);
+        addSeenCell(r, c);
     }
 
     public synchronized int getGoalX() { return goalX; }
@@ -111,11 +111,11 @@ public class Environment {
     }
     
     public synchronized boolean isGoalReached() {
-        return agentX == goalX && agentY == goalY;
+        return agentR == goalX && agentC == goalY;
     }
     
     public synchronized int[] getDirectionToGoal() {
-        return new int[]{goalX - agentX, goalY - agentY};
+        return new int[]{goalX - agentR, goalY - agentC};
     }
     
     // -------------------------------------------------------------------------
@@ -172,11 +172,11 @@ public class Environment {
     public Map<RelativePos, Integer> perceive(ArrayList<RelativePos> sensors) {
         // Percieve lee de world por lo que no necesita sincronizarse
         Map<RelativePos, Integer> perception = 
-                        world.percieve(new RelativePos(agentX, agentY), sensors);
+                        world.percieve(new RelativePos(agentR, agentC), sensors);
         
         for (RelativePos sensor : sensors) {
             int tile = perception.get(sensor);
-            RelativePos pos = sensor.eval(new RelativePos(agentX, agentY));
+            RelativePos pos = sensor.eval(new RelativePos(agentR, agentC));
             // Si no es muro exterior/fuera de rango (-2), se marca como visto
             if (tile != -2) {
                 addSeenCell(pos.getX(), pos.getY()); 
@@ -187,14 +187,14 @@ public class Environment {
     }
     
     public void moveAgent(String direction) {
-        int newX = agentX;
-        int newY = agentY;
+        int newX = agentR;
+        int newY = agentC;
         
         switch(direction.toUpperCase()) {
-            case "UP"    -> newX = agentX - 1;
-            case "DOWN"  -> newX = agentX + 1;
-            case "LEFT"  -> newY = agentY - 1;
-            case "RIGHT" -> newY = agentY + 1;
+            case "UP"    -> newX = agentR - 1;
+            case "DOWN"  -> newX = agentR + 1;
+            case "LEFT"  -> newY = agentC - 1;
+            case "RIGHT" -> newY = agentC + 1;
         }
         
         this.setAgentPosition(newX, newY);
@@ -212,19 +212,19 @@ public class Environment {
     public synchronized boolean[] getVisitedDirections() {
         boolean[] visited = new boolean[4];
         // Asumiendo que agentX es fila y agentY es columna
-        visited[0] = hasVisited(agentX - 1, agentY); // UP
-        visited[1] = hasVisited(agentX, agentY + 1); // RIGHT
-        visited[2] = hasVisited(agentX + 1, agentY); // DOWN
-        visited[3] = hasVisited(agentX, agentY - 1); // LEFT
+        visited[0] = hasVisited(agentR - 1, agentC); // UP
+        visited[1] = hasVisited(agentR, agentC + 1); // RIGHT
+        visited[2] = hasVisited(agentR + 1, agentC); // DOWN
+        visited[3] = hasVisited(agentR, agentC - 1); // LEFT
         return visited;
     }
 
     public synchronized int[] getVisitCounts() {
         int[] counts = new int[4];
-        counts[0] = getVisitCount(agentX - 1, agentY); // UP
-        counts[1] = getVisitCount(agentX, agentY + 1); // RIGHT
-        counts[2] = getVisitCount(agentX + 1, agentY); // DOWN
-        counts[3] = getVisitCount(agentX, agentY - 1); // LEFT
+        counts[0] = getVisitCount(agentR - 1, agentC); // UP
+        counts[1] = getVisitCount(agentR, agentC + 1); // RIGHT
+        counts[2] = getVisitCount(agentR + 1, agentC); // DOWN
+        counts[3] = getVisitCount(agentR, agentC - 1); // LEFT
         return counts;
     }
     
