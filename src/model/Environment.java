@@ -268,7 +268,7 @@ public class Environment {
         if (! goalQueue.isEmpty()) {
             Pair<Integer, Integer> firstGoal = goalQueue.peek();
             setGoalPosition(firstGoal. first, firstGoal.second);
-            System.out.println("=== Primer goal establecido:  (" + goalX + ", " + goalY + ") ===");
+            System.out.println("=== Primer goal establecido:  (" + goalR + ", " + goalC + ") ===");
         } else {
             System.err.println("ERROR: La cola está vacía después de inicializar");
         }
