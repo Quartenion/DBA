@@ -3,7 +3,7 @@ package controller;
 /**
  * Pair class
  */
-class Pair<T0, T1> {
+public class Pair<T0, T1> {
     public T0 first;
     public T1 second;
     

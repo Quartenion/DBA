@@ -7,6 +7,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
+import controller.Pair;
+import java.util.List;
 
 
  // Representa el entorno y el estado interno del agente
@@ -40,12 +44,19 @@ public class Environment {
     
     // Para manejar listeners
     private PropertyChangeSupport support = null;
+    
+    // Objetivos
+    private Queue<Pair<Integer, Integer>> goalQueue;
+    private int totalGoals = 0;
+    private int goalsReached = 0;
 
     public Environment(WorldPerceptionInterface w) {
         this.visitedCells = new HashSet<>();
         this.seenCells = new HashSet<>();
         this.visitCountMap = new HashMap<>();
         this.world = w;
+        
+        this.goalQueue = new LinkedList<>();
         
         this.support = new PropertyChangeSupport(this);
     }
@@ -226,4 +237,66 @@ public class Environment {
     public void setMapChanged(boolean mapChanged) {
         this.mapChanged = mapChanged;
     }
+    
+    // -------------------------------------------------------------------------
+    // GOALS - DBA3
+    // -------------------------------------------------------------------------
+    
+    public synchronized int getGoalsReached() { return goalsReached; }
+    public synchronized int getTotalGoals() { return totalGoals; }
+    
+    /**
+     * 
+     * 
+    * Inicializa la cola de objetivos con las coordenadas de los renos
+    * @param reindeerCoords Lista de coordenadas (row, col)
+    */
+   public synchronized void initializeGoals(ArrayList<Pair<Integer, Integer>> reindeerCoords) {
+       goalQueue.clear();
+       goalsReached = 0;
+
+       for (Pair<Integer, Integer> coord : reindeerCoords) {
+           goalQueue.offer(coord); // offer() == add(), pero no da Exception cuando falla, devuelve false
+       }
+
+       totalGoals = goalQueue.size();
+
+       // Establecer el primer goal
+       if (!goalQueue.isEmpty()) {
+           Pair<Integer, Integer> firstGoal = goalQueue.peek(); // peek() toma el primer valor, pero no lo elimina
+           setGoalPosition(firstGoal.first, firstGoal.second);
+       }
+   }
+
+   /**
+    * Marca el goal actual como alcanzado y carga el siguiente
+    * @return true si había más goals, false si era el último
+    */
+   public synchronized boolean moveToNextGoal() {
+       if (!goalQueue.isEmpty()) {
+           goalQueue.poll(); // poll() == peek(), pero si lo elimina
+           goalsReached++;
+
+           if (!goalQueue.isEmpty()) {
+               Pair<Integer, Integer> nextGoal = goalQueue.peek();
+               setGoalPosition(nextGoal.first, nextGoal.second);
+               return true;
+           }
+       }
+       return false; // No hay más goals
+   }
+
+   /**
+    * @return true si quedan renos por encontrar
+    */
+   public synchronized boolean hasMoreGoals() {
+       return !goalQueue.isEmpty();
+   }
+
+   /**
+    * @return Lista de goals pendientes (para visualización)
+    */
+   public synchronized List<Pair<Integer, Integer>> getPendingGoals() {
+       return new ArrayList<>(goalQueue);
+   }
 }
