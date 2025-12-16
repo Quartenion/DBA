@@ -240,7 +240,7 @@ public class Controller {
                     
                     if (partes.length >= 2) {
                         ac = Integer.valueOf(partes[0].trim()); // X = columna
-                        ar = Integer. valueOf(partes[1].trim()); // Y = fila
+                        ar = Integer.valueOf(partes[1].trim()); // Y = fila
                         System.out.println("  Agente inicial: fila=" + ar + ", col=" + ac);
                     }
                 }
@@ -486,29 +486,30 @@ public class Controller {
                 // B) COMPROBAR SI SE ALCANZO EL GOAL
                 // Detiene la logica del agente y del controlador
                 if (model.isGoalReached()) {
-                    // Verificar si hay más renos por encontrar
-                    if (model.hasMoreGoals()) {
+                    
+                    // Check if Santa is reached P3
+                    if (!model.isSantaReached()) {
                         int renosEncontrados = model.getGoalsReached();
                         int totalRenos = model.getTotalGoals();
 
-                        view. addLogEntry("✅ ¡Reno " + renosEncontrados + "/" + totalRenos + " encontrado!");
+                        view. addLogEntry("¡Reno " + renosEncontrados + "/" + totalRenos + " encontrado!");
 
                         // Cambiar al siguiente reno
                         model.moveToNextGoal();
 
-                        if (model.hasMoreGoals()) {
-                            view.addLogEntry("🦌 Siguiente objetivo: Reno en (" + 
+                        if (!model.isSantaReached()) {
+                            view.addLogEntry("Siguiente objetivo: Reno en (" + 
                                 model.getGoalR() + ", " + model.getGoalC() + ")");
                         } else {
                             // Todos los renos encontrados
-                            view.addLogEntry("🎉 ¡TODOS LOS RENOS RESCATADOS!");
+                            view.addLogEntry("Todos los renos encontrados");
                             this.model.stop();
                             this.isRunning = false;
                             view.setRunButtonSelected(false);
                             view.setMapSelectorEnabled(true);
                         }
 
-                    } else {
+                    } else { // For P2, santa is always reached
                         // Objetivo único alcanzado (mapa P2)
                         this.model.stop();
                         this.isRunning = false;
@@ -687,6 +688,15 @@ public class Controller {
                     
                     // En el caso del elfo no lo reinicio porque en principio 
                     // no haría falta
+                    
+                    // Simulamos a rudolph
+                    MapConfigP3 p3cfg = (MapConfigP3) cfg;
+
+                    // Inicializar la cola de objetivos en el Environment
+                    model.initializeGoals(p3cfg.coordRenos);
+                    
+                    this.model.itsP3setSantaIn();
+                    
                     try {
                         AgentController acHW = cc.createNewAgent("AgentP3",
                                 AgentP3.class.getCanonicalName(),
@@ -697,7 +707,9 @@ public class Controller {
                     
                 }
                 else { // En caso de ser un mapa de P2 creamos el agente y ya.
-                                    // Creamos un nuevo agente y lo arrancamos con los argumentos
+                    // Creamos un nuevo agente y lo arrancamos con los argumentos
+                    this.model.itsP2setSantaAside();
+                    
                     try {
                         AgentController acHW = cc.createNewAgent("AgentP3",
                                 AgentP3.class.getCanonicalName(),
@@ -707,18 +719,21 @@ public class Controller {
                     } catch (StaleProxyException ex) {
                         Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                     }
+                    
+                    // Only setGoalPositionHere, initializeGoals does the job
+                    this.model.setGoalPosition(goalR, goalC);
                 }
                 
             } else {
                 System.out.println("Configuracion no encontrada para " + fileName + ". Usando defaults.");
+                // Aqui ponemos la goal position default también
+                this.model.setGoalPosition(goalR, goalC);
             }
 
             // Aplicamos las posiciones al entorno logico del Agente
             this.model.setAgentPosition(startR, startC);
-            // (en P3 ya se estableció en initializeGoals())
-            if (!(mapConfigs.get(fileName) instanceof MapConfigP3)) {
-                this.model.setGoalPosition(goalR, goalC);
-            }
+            
+            
             
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error al leer el archivo de mapa: " + e.getMessage());

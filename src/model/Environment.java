@@ -49,6 +49,13 @@ public class Environment {
     private Queue<Pair<Integer, Integer>> goalQueue;
     private int totalGoals = 0;
     private int goalsReached = 0;
+    
+    
+    /**
+     * Variable que va a indicar el fin del juego verdadero
+     * 
+     */
+    private boolean santaReached = false;
 
     public Environment(WorldPerceptionInterface w) {
         this.visitedCells = new HashSet<>();
@@ -150,6 +157,11 @@ public class Environment {
        visitedCells.clear();
        seenCells.clear();
        visitCountMap.clear();
+       
+       // Añadido temporalmente porq la implementación de cola lo requiere
+       this.goalQueue.clear();
+       this.goalsReached = 0;
+       this.totalGoals = 0;
     }
     
     // -------------------------------------------------------------------------
@@ -274,35 +286,47 @@ public class Environment {
         }
     }
 
-   /**
-    * Marca el goal actual como alcanzado y carga el siguiente
-    * @return true si había más goals, false si era el último
-    */
-   public synchronized boolean moveToNextGoal() {
-       if (!goalQueue.isEmpty()) {
-           goalQueue.poll(); // poll() == peek(), pero si lo elimina
-           goalsReached++;
+    /**
+     * Marca el goal actual como alcanzado y carga el siguiente
+     * @return true si había más goals, false si era el último
+     */
+    public synchronized boolean moveToNextGoal() {
+        if (!goalQueue.isEmpty()) {
+            goalQueue.poll(); // poll() == peek(), pero si lo elimina
+            goalsReached++;
 
-           if (!goalQueue.isEmpty()) {
-               Pair<Integer, Integer> nextGoal = goalQueue.peek();
-               setGoalPosition(nextGoal.first, nextGoal.second);
-               return true;
-           }
-       }
-       return false; // No hay más goals
-   }
+            if (!goalQueue.isEmpty()) {
+                Pair<Integer, Integer> nextGoal = goalQueue.peek();
+                setGoalPosition(nextGoal.first, nextGoal.second);
+                return true;
+            }
+        }
+        return false; // No hay más goals
+    }
 
-   /**
-    * @return true si quedan renos por encontrar
-    */
-   public synchronized boolean hasMoreGoals() {
-       return !goalQueue.isEmpty();
-   }
+    /**
+     * @return true cuando se llega al goal que es santa
+     */
+    public synchronized boolean isSantaReached() {
+        return this.santaReached;
+    }
+    
+    /**
+     * Controller has to use this function for P2 maps
+     */
+    public synchronized void itsP2setSantaAside(){
+        this.santaReached = true;
+    }
+    
+    public synchronized void itsP3setSantaIn(){
+        this.santaReached = false;
+    }
+   
 
-   /**
-    * @return Lista de goals pendientes (para visualización)
-    */
-   public synchronized List<Pair<Integer, Integer>> getPendingGoals() {
-       return new ArrayList<>(goalQueue);
-   }
+    /**
+     * @return Lista de goals pendientes (para visualización)
+     */
+    public synchronized List<Pair<Integer, Integer>> getPendingGoals() {
+        return new ArrayList<>(goalQueue);
+    }
 }
