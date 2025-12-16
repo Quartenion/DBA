@@ -11,7 +11,7 @@ public class ElfTranslatorAgent extends Agent {
 
     @Override
     protected void setup() {
-        System.out.println("Agente Elfo " + getLocalName() + " iniciado.");
+        System.out.println("===Agente Elfo " + getLocalName() + " iniciado.===");
         // Añadimos el comportamiento que has recuperado
         addBehaviour(new TranslatorBehaviour());
     }

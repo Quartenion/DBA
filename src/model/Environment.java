@@ -20,8 +20,8 @@ public class Environment {
     // Variables de Posicion 
     private int agentR;
     private int agentC;
-    private int goalX;
-    private int goalY;
+    private int goalR;
+    private int goalC;
     
     // Estado y Metricas 
     private int energyUsed = 0;
@@ -77,8 +77,8 @@ public class Environment {
     // GETTERS Y SETTERS DE POSICIÓN 
     // -------------------------------------------------------------------------
 
-    public synchronized int getAgentX() { return agentR; }
-    public synchronized int getAgentY() { return agentC; }
+    public synchronized int getAgentR() { return agentR; }
+    public synchronized int getAgentC() { return agentC; }
     
     
     // Actualiza la posicion del agente y registra automaticamente la visita
@@ -91,40 +91,40 @@ public class Environment {
         addSeenCell(r, c);
     }
 
-    public synchronized int getGoalX() { return goalX; }
-    public synchronized int getGoalY() { return goalY; }
+    public synchronized int getGoalR() { return goalR; }
+    public synchronized int getGoalC() { return goalC; }
         
-    public synchronized void setGoalPosition(int x, int y) {
-        this.goalX = x;
-        this.goalY = y;  
+    public synchronized void setGoalPosition(int r, int c) {
+        this.goalR = r;
+        this.goalC = c;  
     }
     
     public synchronized boolean isGoalReached() {
-        return agentR == goalX && agentC == goalY;
+        return agentR == goalR && agentC == goalC;
     }
     
     public synchronized int[] getDirectionToGoal() {
-        return new int[]{goalX - agentR, goalY - agentC};
+        return new int[]{goalR - agentR, goalC - agentC};
     }
     
     // -------------------------------------------------------------------------
     // GESTION DE MEMORIA 
     // -------------------------------------------------------------------------
     
-    public synchronized void addVisitedCell(int x, int y) { 
-        visitedCells.add(x + "," + y); 
+    public synchronized void addVisitedCell(int r, int c) { 
+        visitedCells.add(r + "," + c); 
     }
     
-    public synchronized void addSeenCell(int x, int y) { 
-        seenCells.add(x + "," + y); 
+    public synchronized void addSeenCell(int r, int c) { 
+        seenCells.add(r + "," + c); 
     }
     
-    public synchronized boolean hasVisited(int x, int y) { 
-        return visitedCells.contains(x + "," + y); 
+    public synchronized boolean hasVisited(int r, int c) { 
+        return visitedCells.contains(r + "," + c); 
     }
     
-    public synchronized boolean hasSeen(int x, int y) { 
-        return seenCells.contains(x + "," + y); 
+    public synchronized boolean hasSeen(int r, int c) { 
+        return seenCells.contains(r + "," + c); 
     }
     
     public synchronized Set<String> getVisitedCells() { 
@@ -145,13 +145,13 @@ public class Environment {
     // MAPA DE CALOR (MIGAJAS)
     // -------------------------------------------------------------------------
     
-    public synchronized void incrementVisitCount(int x, int y) {
-        String key = x + "," + y;
+    public synchronized void incrementVisitCount(int r, int c) {
+        String key = r + "," + c;
         visitCountMap.put(key, visitCountMap.getOrDefault(key, 0) + 1);
     }
 
-    public synchronized int getVisitCount(int x, int y) {
-        return visitCountMap.getOrDefault(x + "," + y, 0);
+    public synchronized int getVisitCount(int r, int c) {
+        return visitCountMap.getOrDefault(r + "," + c, 0);
     }
 
     // -------------------------------------------------------------------------

@@ -13,20 +13,20 @@ import java.util.Objects;
  */
 public class RelativePos {
     
-    private final int x;
-    private final int y;
+    private final int r;
+    private final int c;
 
-    public RelativePos(int deltaX, int deltaY) {
-        this.x = deltaX;
-        this.y = deltaY;
+    public RelativePos(int deltaR, int deltaC) {
+        this.r = deltaR;
+        this.c = deltaC;
     }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
+    public int getX() { return r; }
+    public int getY() { return c; }
 
     
     public RelativePos eval(int x, int y){
-        return new RelativePos(x+this.x,y+this.y);
+        return new RelativePos(x+this.r,y+this.c);
     }
     
     public RelativePos eval(RelativePos pos){
@@ -38,11 +38,11 @@ public class RelativePos {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RelativePos that = (RelativePos) o;
-        return x == that.x && y == that.y;
+        return r == that.r && c == that.c;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(x, y);
+        return Objects.hash(r, c);
     }
 }

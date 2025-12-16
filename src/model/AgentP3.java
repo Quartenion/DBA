@@ -42,7 +42,7 @@ public class AgentP3 extends Agent {
     private final int ACTION_TIME = 50; // Tiempo entre ticks
     private String lastMove = null;      // Guarda la ultima accion efectiva ("UP", "DOWN", etc...)
                                          // Sirve para evitar que se realice una accion completamente opuesta
-   
+    
     // Usamos IDs únicos de comunicación para cada uno de los agentes ya
     // que solo tendrá una vía abierta al mismo tiempo con cada uno de ellos
     private final String TRASLATION_ID = "traslation_elf_";
@@ -61,7 +61,6 @@ public class AgentP3 extends Agent {
     @Override
     protected void setup(){
         // 1. Recuperacion de argumentos (El entorno)
-        
         Object[] args = getArguments();
         if (args != null && args.length > 0 && args[0] instanceof Environment) {
             this.model = (Environment) args[0];
@@ -69,9 +68,21 @@ public class AgentP3 extends Agent {
             throw new RuntimeException("Environment no proporcionado");
         }
         
-        // 2. Añadir comportamiento principal
-        addBehaviour(new startSearchBehaviour());
-        addBehaviour(new reactiveAgentBehaviour(this, ACTION_TIME));
+        // 2. Añadir comportamientos
+        if (args.length > 1) {
+            addBehaviour(new startSearchBehaviour());
+            addBehaviour(new reactiveAgentBehaviourP3(this, ACTION_TIME));
+        }
+        else {            
+            addBehaviour(new reactiveAgentBehaviour(this, ACTION_TIME));
+        }
+        
+        
+        // 3. Limpieza de cola de mensajes (esto no evita si había uno llegando)
+        // Cubre la mayoría de los casos, si fueramos prudentes lo que habría que 
+        // hacer es pasarle ID único al agente y trabajar con eso, no hace falta
+        flushMessageQueue();
+        
         System.out.println("=== SetUp completado agente AgentP3 ===");
     }
     
@@ -79,6 +90,16 @@ public class AgentP3 extends Agent {
     public void takeDown(){
         System.out.println("=== Terminando agente AgentP3 ===");
     }
+    
+    public void flushMessageQueue() {
+    ACLMessage msg = receive();
+    while (msg != null) {
+        // Simplemente los leemos y no hacemos nada con ellos
+        // para sacarlos de la cola interna del agente.
+        msg = receive();
+    }
+    System.out.println("Cola de mensajes vaciada.");
+}
     
     // Metodos puente para acceder al modelo -----------------------------------
     public boolean isRunning(){ return this.model.isRunning(); }
@@ -141,10 +162,11 @@ public class AgentP3 extends Agent {
         }
     }
     
-    // Comportamiento ciclico del agente
-    // Estructura: PERCEPCION -> PENSAMIENTO  -> ACCION
-    class reactiveAgentBehaviour extends TickerBehaviour {
-        
+    /**
+     * AUN NO HA SIDO MODIFICADO
+     * COPIA DE reactiveAgentBehaviour
+     */
+    class reactiveAgentBehaviourP3 extends TickerBehaviour {
         private int tickCount = 0;
         
         // MAQUINA DE ESTADOS --------------------------------------------------
@@ -164,7 +186,7 @@ public class AgentP3 extends Agent {
         private int wallStartX = -1;
         private int wallStartY = -1;
 
-        public reactiveAgentBehaviour(Agent a, long period){
+        public reactiveAgentBehaviourP3(Agent a, long period){
             super(a, period);
         }
         
@@ -231,8 +253,8 @@ public class AgentP3 extends Agent {
                         hitDistance = currentDist;
                         
                         // Guardar datos para debug
-                        wallStartX = model.getAgentX();
-                        wallStartY = model.getAgentY();
+                        wallStartX = model.getAgentR();
+                        wallStartY = model.getAgentC();
 
                         // 1. Identificar donde esta el obstaculo
                         wallToFollow = getBlockedDirection(goalDir);
@@ -303,16 +325,16 @@ public class AgentP3 extends Agent {
             // 3. ACCION
             // =================================================================
             if (!"BLOCKED".equals(decision)) {
-                int oldX = model.getAgentX();
-                int oldY = model.getAgentY();
+                int oldX = model.getAgentR();
+                int oldY = model.getAgentC();
                 
                 model.moveAgent(decision);
                 
                 // Verificacion de efectividad del movimiento
-                if (oldX != model.getAgentX() || oldY != model.getAgentY()) {
+                if (oldX != model.getAgentR() || oldY != model.getAgentC()) {
                     model.incrementEnergy();
                     lastMove = decision;
-                    System.out.println("  ✅ Movimiento ejecutado: " + decision + " -> nueva pos: (" + model.getAgentX() + "," + model.getAgentY() + ")");
+                    System.out.println("  ✅ Movimiento ejecutado: " + decision + " -> nueva pos: (" + model.getAgentR() + "," + model.getAgentC() + ")");
                 } else {
                     System.out.println("  Movimiento NO efectivo (bloqueado tras moveAgent): " + decision);
                 }
@@ -330,7 +352,7 @@ public class AgentP3 extends Agent {
          // Gestiona la logica Anti-Loop: cuenta colisiones en el mismo punto
          // Si se repiten y no hay mejora global de distancia, cambia la mano
         private boolean checkAntiLoopHeuristic(double currentDist) {
-            String currentPos = model.getAgentX() + "," + model.getAgentY();
+            String currentPos = model.getAgentR() + "," + model.getAgentC();
             
             if (currentPos.equals(lastCollisionPos)) {
                 collisionCountAtPos++;
@@ -485,8 +507,418 @@ public class AgentP3 extends Agent {
         // Imprime el bloque grande de informacion al inicio de cada Tick
         private void printPerceptionDebug(Map<RelativePos,Integer> perception, int[] goalDir, double currentDist) {
             System.out.println("\n[TICK " + tickCount + "]");
-            System.out.println("  Pos: (" + model.getAgentX() + "," + model.getAgentY() + ")");
-            System.out.println("  Goal: (" + model.getGoalX() + "," + model.getGoalY() + ")");
+            System.out.println("  Pos: (" + model.getAgentR() + "," + model.getAgentC() + ")");
+            System.out.println("  Goal: (" + model.getGoalR() + "," + model.getGoalC() + ")");
+            System.out.println("  Distancia al objetivo: " + String.format("%.3f", currentDist));
+            System.out.println("  Direccion al objetivo (dY, dX): (" + goalDir[0] + ", " + goalDir[1] + ")");
+            System.out.println("  Percepcion (U,R,D,L): [" +
+                perception.get(sensors.get(0)) + ", " +
+                perception.get(sensors.get(1)) + ", " +
+                perception.get(sensors.get(2)) + ", " +
+                perception.get(sensors.get(3)) + "]");
+            System.out.println("  Ultimo movimiento efectivo: " + lastMove);
+            System.out.println("  Modo actual: " + currentMode);
+            
+            if (currentMode == Mode.WALL_FOLLOW) {
+                System.out.println("    -> wallToFollow: " + wallToFollow + " (" + dirName(wallToFollow) + ")");
+                System.out.println("    -> useLeftHand: " + useLeftHand);
+                System.out.println("    -> hitDistance (al chocar): " + String.format("%.3f", hitDistance));
+                if (wallStartX != -1) {
+                    System.out.println("    -> Pared iniciada en: (" + wallStartX + "," + wallStartY + ")");
+                }
+            }
+        }
+
+        // Imprime informacion especifica cuando ocurre un choque y entra en modo pared
+        private void printHitDebug(String decision, boolean antiLoopTriggered) {
+            System.out.println("  [GREEDY] ❌ Bloqueado -> cambio a WALL_FOLLOW");
+            System.out.println("    -> wallToFollow = " + wallToFollow + " (" + dirName(wallToFollow) + ")");
+            System.out.println("    -> useLeftHand = " + useLeftHand + (antiLoopTriggered ? " [CAMBIADO por anti-loop]" : ""));
+            System.out.println("    -> Decision inicial de pared: " + decision);
+        }
+
+        // Imprime la linea de resumen de decision al final de la fase de pensamiento
+        private void printDecisionLog(String logMessage, double currentDist) {
+            System.out.println("  -> Log: [" + tickCount + "] " + logMessage + " | Dist: " + String.format("%.2f", currentDist));
+        }
+        
+        // Reinicia todas las variables de estado y heuristicas
+        private void resetMemory() {
+            System.out.println("--- DETECTADO CAMBIO DE ENTORNO: RESETEANDO MEMORIA AGENTE P2 (dont concern comm)---");
+            
+            // 1. Reiniciar contadores visuales
+            this.tickCount = 0;
+            
+            // 2. Reiniciar Maquina de Estados
+            this.currentMode = Mode.GREEDY;
+            
+            // 3. Reiniciar Memoria Wall Follow
+            this.wallToFollow = -1;
+            this.useLeftHand = true;
+            this.hitDistance = Double.MAX_VALUE; 
+            
+            // 4. Reiniciar Heuristicas Anti-Bucle
+            this.lastCollisionPos = null;
+            this.collisionCountAtPos = 0;
+            
+            // 5. Reiniciar Debugging
+            this.wallStartX = -1;
+            this.wallStartY = -1;
+            
+            // 6. Reiniciar variable de la clase externa (AgentP2)
+            AgentP3.this.lastMove = null; 
+        }        
+    }
+    
+    
+    //--------------------------------------------------------------------------
+    // Comportamiento ciclico del agente
+    // UNTOUCHED BY P3
+    // Estructura: PERCEPCION -> PENSAMIENTO  -> ACCION
+    class reactiveAgentBehaviour extends TickerBehaviour {
+        
+        private int tickCount = 0;
+        
+        // MAQUINA DE ESTADOS --------------------------------------------------
+        private enum Mode { GREEDY, WALL_FOLLOW }
+        private Mode currentMode = Mode.GREEDY;
+        
+        // MEMORIA WALL FOLLOW -------------------------------------------------
+        private int wallToFollow = -1;      // Direccion relativa del muro (0=UP, etc)
+        private boolean useLeftHand = true; // Direccion en la que sigue el muro (con la mano izda o la dcha)
+        private double hitDistance = Double.MAX_VALUE; // Distancia al goal al momento del choque
+
+        // HEURISTICAS ANTI-BUCLE ----------------------------------------------
+        private String lastCollisionPos = null;
+        private int collisionCountAtPos = 0;
+
+        // DEBUGGING -----------------------------------------------------------
+        private int wallStartX = -1;
+        private int wallStartY = -1;
+
+        public reactiveAgentBehaviour(Agent a, long period){
+            super(a, period);
+        }
+        
+        @Override
+        public void onTick(){
+            boolean isRunning = ((AgentP3) myAgent).isRunning();
+            
+            // DETECCIÓN DE REINICIO (Flanco de subida)
+            // Si ahora estamos corriendo, pero en el ultimo tick estábamos parados,
+            // significa que el usuario le ha dado a "RUN" de nuevo (posiblemente mapa nuevo).
+            if (model.isMapChanged()) {
+                resetMemory();
+                model.setMapChanged(false);
+            }
+
+            // Si no está corriendo, salimos
+            if (!isRunning) return;
+            
+            
+            tickCount++;
+            
+            // -----------------------------------------------------------------
+            // 1. PERCEPCION
+            // -----------------------------------------------------------------
+            ((AgentP3) myAgent).changeState(State.SEE);
+            
+            Map<RelativePos,Integer> perception = model.perceive(sensors);
+            int[] goalDir = model.getDirectionToGoal(); 
+            double currentDist = Math.sqrt(Math.pow(goalDir[0], 2) + Math.pow(goalDir[1], 2));
+            
+            // DEBUG
+            printPerceptionDebug(perception, goalDir, currentDist);
+
+            // -----------------------------------------------------------------
+            // 2. PENSAMIENTO (DECISION)
+            // -----------------------------------------------------------------
+            ((AgentP3) myAgent).changeState(State.THINK);
+            
+            String decision = "BLOCKED";
+            String logMessage = ""; // Variable para traza de depuracion
+
+            // A. Verificar si hemos llegado
+            if (model.isGoalReached()) {
+                System.out.println("!!! OBJETIVO ALCANZADO !!!");
+                ((AgentP3) myAgent).changeState(State.STANDBY);
+                model.stop();
+                return;
+            }
+
+            // B. Maquina de Estados (GREEDY vs WALL_FOLLOW)
+            switch (currentMode) {
+                case GREEDY:
+                    // Intento de movimiento directo hacia el objetivo
+                    String directMove = getDirectMove(goalDir, perception);
+                    
+                    if (directMove != null) {
+                        // CAMINO LIBRE ----------------------------------------
+                        decision = directMove;
+                        logMessage = "GREEDY";
+                        System.out.println("  [GREEDY] Movimiento directo posible: " + directMove);
+                    } else {
+                        // CHOQUE DETECTADO (Inicio de Wall Follow) ------------
+                        currentMode = Mode.WALL_FOLLOW;
+                        hitDistance = currentDist;
+                        
+                        // Guardar datos para debug
+                        wallStartX = model.getAgentR();
+                        wallStartY = model.getAgentC();
+
+                        // 1. Identificar donde esta el obstaculo
+                        wallToFollow = getBlockedDirection(goalDir);
+
+                        // 2. Heuristica: Decidir mano inicial (Izquierda o Derecha)
+                        useLeftHand = decideHand(wallToFollow, goalDir);
+
+                        // 3. Heuristica: Anti-Bucle (Detectar colisiones repetidas en el mismo punto)
+                        boolean antiLoopTriggered = checkAntiLoopHeuristic(currentDist);
+
+                        // Registro de log
+                        logMessage = "HIT -> WALL_FOLLOW (" + (useLeftHand ? "L" : "R") + ")";
+                        if (antiLoopTriggered) logMessage += " [ANTI-LOOP]";
+
+                        // 4. Obtener primer movimiento de rodeo
+                        decision = followWallStrict(perception);
+                        
+                        // 5. Heuristica: Anti-Reverse 
+                        // Si la decision de pared nos hace dar la vuelta (180º) pero podiamos seguir recto:
+                        if (lastMove != null && isOpposite(decision, lastMove)) {
+                            int lastMoveIdx = getDirIndex(lastMove);
+                            if (isFree(lastMoveIdx, perception)) {
+                                System.out.println("[ANTI-REVERSE] Evitando giro 180º. Forzando inercia: " + lastMove);
+                                decision = lastMove;
+                                useLeftHand = !useLeftHand; // Invertir mano para alinear logica en siguiente tick
+                                logMessage += " [HAND-SWAP FORCED]";
+                            }
+                        }
+                        
+                        // Log detallado del cambio de modo
+                        printHitDebug(decision, antiLoopTriggered);
+                    }
+                    break;
+
+                case WALL_FOLLOW:
+                    // Verificar condicion de salida (Bug Algorithm Logic)
+                    String tryDirect = getDirectMove(goalDir, perception);
+                    double EPSILON = 0.1; 
+                    
+                    // Condicion de salida: 
+                    // 1. Existe camino directo
+                    // 2. Es compatible con inercia (no es giro 180º)
+                    // 3. Estamos mas cerca del objetivo que cuando chocamos (Progreso real).
+                    boolean isCloser = currentDist < (hitDistance - EPSILON);
+
+                    if (tryDirect != null && isCompatibleWithLastMove(tryDirect) && isCloser) {
+                        // SALIDA DE PARED -------------------------------------
+                        currentMode = Mode.GREEDY;
+                        decision = tryDirect;
+                        logMessage = "LEAVE WALL -> GREEDY (dir=" + tryDirect + ") [Dist: " + String.format("%.2f", currentDist) + " < Hit: " + String.format("%.2f", hitDistance) + "]";
+                        System.out.println("  [WALL] ✅ Salida valida: Camino libre Y mejor distancia.");
+                    } else {
+                        // CONTINUAR PARED -------------------------------------
+                        if (tryDirect != null && !isCloser) {
+                            System.out.println("  [WALL] Camino directo visto (" + tryDirect + ") pero ignorado: Distancia actual >= HitDistance");
+                        }
+
+                        decision = followWallStrict(perception);
+                        logMessage = "  WALL (" + (useLeftHand ? "L" : "R") + ")";
+                    }
+                    break;
+            }
+
+            // Imprimir resumen de decision
+            printDecisionLog(logMessage, currentDist);
+
+            // =================================================================
+            // 3. ACCION
+            // =================================================================
+            if (!"BLOCKED".equals(decision)) {
+                int oldX = model.getAgentR();
+                int oldY = model.getAgentC();
+                
+                model.moveAgent(decision);
+                
+                // Verificacion de efectividad del movimiento
+                if (oldX != model.getAgentR() || oldY != model.getAgentC()) {
+                    model.incrementEnergy();
+                    lastMove = decision;
+                    System.out.println("  ✅ Movimiento ejecutado: " + decision + " -> nueva pos: (" + model.getAgentR() + "," + model.getAgentC() + ")");
+                } else {
+                    System.out.println("  Movimiento NO efectivo (bloqueado tras moveAgent): " + decision);
+                }
+            } else {
+                System.out.println("  Decision = BLOCKED");
+            }
+            
+            ((AgentP3) myAgent).changeState(State.ACTION);
+        }
+
+        // =========================================================================
+        // LOGICA DE ALGORITMOS Y HELPERS
+        // =========================================================================
+        
+         // Gestiona la logica Anti-Loop: cuenta colisiones en el mismo punto
+         // Si se repiten y no hay mejora global de distancia, cambia la mano
+        private boolean checkAntiLoopHeuristic(double currentDist) {
+            String currentPos = model.getAgentR() + "," + model.getAgentC();
+            
+            if (currentPos.equals(lastCollisionPos)) {
+                collisionCountAtPos++;
+            } else {
+                lastCollisionPos = currentPos;
+                collisionCountAtPos = 1;
+            }
+
+            // Si ya chocamos 2+ veces EN ESTA MISMA CASILLA -> romper simetria
+            if (collisionCountAtPos >= 2) {
+                useLeftHand = !useLeftHand; // Cambiar mano
+                return true;
+            }
+
+            return false;
+        }
+        
+        private boolean decideHand(int blockedDir, int[] goalDir) {
+            int dY = goalDir[0]; 
+            int dX = goalDir[1]; 
+
+            switch (blockedDir) {
+                case 0: // Bloqueado ARRIBA
+                    // LHR lleva a Derecha. RHR lleva a Izquierda.
+                    // Si el objetivo esta a la derecha (dX > 0), quiero LHR.
+                    return dX >= 0;
+
+                case 1: // Bloqueado DERECHA
+                    // LHR lleva a Abajo. RHR lleva a Arriba.
+                    // Si el objetivo esta Abajo (dY > 0), quiero LHR.
+                    return dY > 0;
+
+                case 2: // Bloqueado ABAJO
+                    // LHR lleva a Izquierda. RHR lleva a Derecha.
+                    // Si el objetivo esta a la Izquierda (dX < 0), quiero LHR.
+                    return dX <= 0;
+
+                case 3: // Bloqueado IZQUIERDA
+                    // LHR lleva a Arriba. RHR lleva a Abajo.
+                    // Si el objetivo esta Arriba (dY < 0), quiero LHR.
+                    return dY < 0;
+            }
+
+            return true;
+        }
+
+        private String followWallStrict(Map<RelativePos,Integer> perception) {
+            String[] dirs = {"UP", "RIGHT", "DOWN", "LEFT"};
+            int turnOut = useLeftHand ? 1 : 3; // (-1 mod 4) Girar hacia afuera
+            int turnIn  = useLeftHand ? 3 : 1; // (+1 mod 4) Girar hacia adentro
+
+            // 1. REGLA DEL HUECO (Esquina Convexa): Intentar girar hacia la pared
+            if (isFree(wallToFollow, perception)) {
+                String move = dirs[wallToFollow];
+                wallToFollow = (wallToFollow + turnIn) % 4; // Recalibrar muro
+                return move;
+            }
+            
+            // 2. REGLA DE AVANCE (Pared recta): Intentar seguir recto
+            int moveDir = (wallToFollow + turnOut) % 4;
+            if (isFree(moveDir, perception)) {
+                return dirs[moveDir];
+            }
+            
+            // 3. REGLA DEL CALLEJON (Esquina Concava): Girar sobre si mismo
+            wallToFollow = moveDir; // El muro ahora esta al frente
+            return "BLOCKED";
+        }
+
+        private String getDirectMove(int[] goalDir, Map<RelativePos, Integer> perception) {
+            int dY = goalDir[0];
+            int dX = goalDir[1];
+            List<String> candidates = new ArrayList<>();
+
+            if (dY < 0 && isFree(0, perception)) candidates.add("UP");
+            if (dY > 0 && isFree(2, perception)) candidates.add("DOWN");
+            if (dX < 0 && isFree(3, perception)) candidates.add("LEFT");
+            if (dX > 0 && isFree(1, perception)) candidates.add("RIGHT");
+
+            if (candidates.isEmpty()) return null;
+            if (candidates.size() == 1) return candidates.get(0);
+
+            // Decision puramente matematica para reducir el eje mayor
+            String choice;
+            if (Math.abs(dY) >= Math.abs(dX)) {
+                // Prioridad Vertical
+                if (dY < 0) choice = "UP";
+                else if (dY > 0) choice = "DOWN";
+                else if (dX < 0) choice = "LEFT"; 
+                else choice = "RIGHT";
+            } else {
+                // Prioridad Horizontal
+                if (dX < 0) choice = "LEFT";
+                else if (dX > 0) choice = "RIGHT";
+                else if (dY < 0) choice = "UP";
+                else choice = "DOWN";
+            }
+            
+            // Validar disponibilidad
+            if (candidates.contains(choice)) {
+                return choice;
+            } else {
+                return candidates.get(0);
+            }
+        }
+        
+        // --- HELPERS BASICOS ---
+
+        private boolean isFree(int dirIndex, Map<RelativePos,Integer> perception) {
+            return perception.get(sensors.get(dirIndex)) == 0;
+        }
+        
+        private int getBlockedDirection(int[] goalDir) {
+            int dY = goalDir[0]; int dX = goalDir[1];
+            // Retorna 0, 1, 2 o 3
+            return (Math.abs(dY) > Math.abs(dX)) ? (dY < 0 ? 0 : 2) : (dX > 0 ? 1 : 3);
+        }
+        
+        private boolean isCompatibleWithLastMove(String move) {
+            if (lastMove == null) return true;
+            return !isOpposite(move, lastMove);
+        }
+
+        private boolean isOpposite(String dir1, String dir2) {
+            if (dir1 == null || dir2 == null) return false;
+            if (dir1.equals("UP") && dir2.equals("DOWN")) return true;
+            if (dir1.equals("DOWN") && dir2.equals("UP")) return true;
+            if (dir1.equals("LEFT") && dir2.equals("RIGHT")) return true;
+            if (dir1.equals("RIGHT") && dir2.equals("LEFT")) return true;
+            return false;
+        }
+
+        private int getDirIndex(String dir) {
+            switch (dir) {
+                case "UP": return 0;
+                case "RIGHT": return 1;
+                case "DOWN": return 2;
+                case "LEFT": return 3;
+                default: return -1;
+            }
+        }
+        
+        private String dirName(int idx) {
+            String[] names = {"UP", "RIGHT", "DOWN", "LEFT"};
+            return (idx >= 0 && idx < 4) ? names[idx] : "???";
+        }
+
+        // ---------------------------------------------------------------------
+        // SECCION DE DEPURACION (MWTODOS EXTRAIDOS)
+        // ---------------------------------------------------------------------
+
+        // Imprime el bloque grande de informacion al inicio de cada Tick
+        private void printPerceptionDebug(Map<RelativePos,Integer> perception, int[] goalDir, double currentDist) {
+            System.out.println("\n[TICK " + tickCount + "]");
+            System.out.println("  Pos: (" + model.getAgentR() + "," + model.getAgentC() + ")");
+            System.out.println("  Goal: (" + model.getGoalR() + "," + model.getGoalC() + ")");
             System.out.println("  Distancia al objetivo: " + String.format("%.3f", currentDist));
             System.out.println("  Direccion al objetivo (dY, dX): (" + goalDir[0] + ", " + goalDir[1] + ")");
             System.out.println("  Percepcion (U,R,D,L): [" +

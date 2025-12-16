@@ -6,8 +6,10 @@ package controller;
  * - Gestiona la carga de mapas y la simulacion.
  * - Respeta MVC.
  */
+import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.ControllerException;
+import jade.wrapper.StaleProxyException;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -21,6 +23,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import model.AgentP3;
 import model.Environment;
 import model.State;
 import model.World;
@@ -299,21 +304,21 @@ public class Controller {
                 int mouseCol = e.getX() / cs;
                 
                 // VERIFICAR SI EL CLIC FUE SOBRE EL AGENTE
-                if (mouseRow == model.getAgentX() && mouseCol == model.getAgentY()) {
+                if (mouseRow == model.getAgentR() && mouseCol == model.getAgentC()) {
                     draggingAgent = true;
                     // Calculamos el desplazamiento para que, al arrastrar, el objeto 
                     // no salte al centro del raton, sino que mantenga la posicion relativa del clicí
                     // es una tonteria pero se ve visualmente un poco mejor
-                    dragOffsetRow = (double)e.getY() / cs - model.getAgentX();
-                    dragOffsetCol = (double)e.getX() / cs - model.getAgentY();
+                    dragOffsetRow = (double)e.getY() / cs - model.getAgentR();
+                    dragOffsetCol = (double)e.getX() / cs - model.getAgentC();
                     return;
                 }
                 
                 // VERIFICAR SI EL CLIC FUE SOBRE EL GOAL
-                if (mouseRow == model.getGoalX() && mouseCol == model.getGoalY()) {
+                if (mouseRow == model.getGoalR() && mouseCol == model.getGoalC()) {
                     draggingGoal = true;
-                    dragOffsetRow = (double)e.getY() / cs - model.getGoalX();
-                    dragOffsetCol = (double)e.getX() / cs - model.getGoalY();
+                    dragOffsetRow = (double)e.getY() / cs - model.getGoalR();
+                    dragOffsetCol = (double)e.getX() / cs - model.getGoalC();
                 }
             }
             
@@ -339,7 +344,7 @@ public class Controller {
                         view.addLogEntry("Agente movido a (" + targetRow + ", " + targetCol + ")");
                     } else {
                         // Se devuelve el agente a su posicion si la nueva áno es valida
-                        view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
+                        view.setAgentDoublePos(model.getAgentR(), model.getAgentC());
                     }
                 } 
                 // LOGICA PARA SOLTAR EL OBJETIVO (IGUAL QUE LA LOGICA DEL AGENTE)
@@ -352,7 +357,7 @@ public class Controller {
                         view.setGoalDoublePos(targetRow, targetCol);
                         view.addLogEntry("Objetivo movido a (" + targetRow + ", " + targetCol + ")");
                     } else {
-                        view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
+                        view.setGoalDoublePos(model.getGoalR(), model.getGoalC());
                     }
                 }
                 
@@ -405,8 +410,8 @@ public class Controller {
                 int col = e.getX() / cs;
                 
                 // Comprobamos si el raton esta sobre el Agente o el Goal
-                boolean overAgent = (row == model.getAgentX() && col == model.getAgentY());
-                boolean overGoal  = (row == model.getGoalX()  && col == model.getGoalY());
+                boolean overAgent = (row == model.getAgentR() && col == model.getAgentC());
+                boolean overGoal  = (row == model.getGoalR()  && col == model.getGoalC());
                 
                 // Cambiamos el cursor a MANO si esta sobre algo interactivo
                 view.setCursor(overAgent || overGoal ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) 
@@ -466,8 +471,8 @@ public class Controller {
                 updateUIInfos();
                 
                 // Sincroniza la posicion visual del agente y meta con la logica
-                view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
-                view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
+                view.setAgentDoublePos(model.getAgentR(), model.getAgentC());
+                view.setGoalDoublePos(model.getGoalR(), model.getGoalC());
 
                 // B) COMPROBAR SI SE ALCANZO EL GOAL
                 // Detiene la logica del agente y del controlador
@@ -488,9 +493,9 @@ public class Controller {
     
     private void updateUIInfos() {
         view.setActionsCount(model.getEnergyUsed());
-        view.setAgentPosition(model.getAgentX(), model.getAgentY());
+        view.setAgentPosition(model.getAgentR(), model.getAgentC());
         view.setGoalReached(model.isGoalReached());
-        view.setGoalPosition(model.getGoalX(), model.getGoalY());
+        view.setGoalPosition(model.getGoalR(), model.getGoalC());
     }
     
     private void initializeMapSelector() {
@@ -523,7 +528,7 @@ public class Controller {
     // y la regeneracion de la interfaz grafica
     // -------------------------------------------------------------------------
     
-    public void restart(String rutaArchivo) {
+    public void restart(String rutaArchivo){
         // ---------------------------------------------------------------------
         // 1. PARADA DE SEGURIDAD
         // ---------------------------------------------------------------------
@@ -537,7 +542,7 @@ public class Controller {
         // 2. RESETEO DEL ESTADO LOGICO (MODELO)
         // ---------------------------------------------------------
         model.resetEnergy();
-        model.clearMemory();
+        model.clearMemory(); 
         
         // Cargar logica del mapa
         read_map(rutaArchivo);   
@@ -560,8 +565,8 @@ public class Controller {
         // ---------------------------------------------------------
         // Alineamos los sprites visuales (Agente y Goal) con las coordenadas 
         // iniciales que acabamos de cargar en el modelo.
-        view.setAgentDoublePos(model.getAgentX(), model.getAgentY());
-        view.setGoalDoublePos(model.getGoalX(), model.getGoalY());
+        view.setAgentDoublePos(model.getAgentR(), model.getAgentC());
+        view.setGoalDoublePos(model.getGoalR(), model.getGoalC());
         
         // Actualizar paneles de informacion
         updateUIInfos();
@@ -579,7 +584,7 @@ public class Controller {
     // - Linea 2: Numero de columnas
     // - Resto: Matriz de valores separados por tabuladores.
     
-    private void read_map(String rutaArchivo) {
+    private void read_map(String rutaArchivo){
         try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
             // -----------------------------------------------------------------
             // 1. PARSEO DE LA ESTRUCTURA DEL MAPA
@@ -618,6 +623,51 @@ public class Controller {
                 startC = cfg.agentC; // Columna
                 goalR = cfg.goalR;   // Fila
                 goalC = cfg.goalC;   // Columna
+                
+                
+                // Nos cargamos el agente mediante bombardeada
+                try{
+                    AgentController acViejo = cc.getAgent("AgentP3");
+                    acViejo.kill();
+                    Thread.sleep(300);
+                }
+                catch (ControllerException e){
+                    System.out.println("El agente no existía, no hace falta matarlo.");
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+                // Verificamos si es un mapa de P3, le pasamos los argumentos indicados
+                if (cfg instanceof MapConfigP3){
+                    // CÓDIGO NUEVO PARA EL REINICIO Y COMIENZO DE INSTANCIA P3
+                    
+                    // Faltaría añadir aquí la lógica que ordena el reinicio
+                    // de los otros agentes o se los carga y reinicia
+                    
+                    // En el caso del elfo no lo reinicio porque en principio 
+                    // no haría falta
+                    try {
+                        AgentController acHW = cc.createNewAgent("AgentP3",
+                                AgentP3.class.getCanonicalName(),
+                                new Object[]{this.model, true});
+
+                        acHW.start();
+                    } catch (StaleProxyException ex) {Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);}
+                    
+                }
+                else { // En caso de ser un mapa de P2 creamos el agente y ya.
+                                    // Creamos un nuevo agente y lo arrancamos con los argumentos
+                    try {
+                        AgentController acHW = cc.createNewAgent("AgentP3",
+                                AgentP3.class.getCanonicalName(),
+                                new Object[]{this.model});
+
+                        acHW.start();
+                    } catch (StaleProxyException ex) {
+                        Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                
             } else {
                 System.out.println("Configuracion no encontrada para " + fileName + ". Usando defaults.");
             }
@@ -628,7 +678,6 @@ public class Controller {
             
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error al leer el archivo de mapa: " + e.getMessage());
-            e.printStackTrace();
         }
     }
     
