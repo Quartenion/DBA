@@ -53,8 +53,8 @@ public class ElfTranslatorAgent extends Agent {
                                 translateReply.setPerformative(ACLMessage.INFORM);
                                 
                                 // Lógica Regex recuperada
-                                replyContent = content.replaceFirst("^\\S+", "Hyvää jolua");
-                                replyContent = replyContent.replaceAll("\\S+\\s+\\S+\\s+\\S+$", "Nähdään pian"); 
+                                replyContent = content.replaceFirst("^\\S+", "Rakas Joulupukki");
+                                replyContent = replyContent.replaceAll("\\S+\\s+\\S+\\s+\\S+$", "Kiitos"); 
                                 // OJO: He ajustado el regex final porque "en plan" son dos palabras, no una.
                                 
                                 translateReply.setContent(replyContent);

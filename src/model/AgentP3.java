@@ -147,11 +147,26 @@ public class AgentP3 extends Agent {
                 }
                 
                 // DEBUG SIMULATOR
-                Thread.sleep(3000);
+                Thread.sleep(1000);
                 
-                System.out.println("\n\nMensaje verificado por agente: " + response.getContent() +
-                                   " terminando la ejecución del comportamiento y ahora se puede mover"
-                                 + " normal\n\n");
+                System.out.println("\n\nMensaje verificado por agente: " + response.getContent() + " procedemos a enviarselo a SANTA");
+                ACLMessage msg_propose_to_santa = new ACLMessage(ACLMessage.PROPOSE);
+                msg_propose_to_santa.addReceiver(new AID("Santa", AID.ISLOCALNAME)); 
+                msg_propose_to_santa.setConversationId(SANTA_MSG_ID);
+                msg_propose_to_santa.setContent(response.getContent());
+                myAgent.send(msg_propose_to_santa);
+                System.out.println("Enviado PROPOSE de cosigo secreto\n");
+                ACLMessage response_propose_to_santa = myAgent.blockingReceive();
+                System.out.println("Recibido RESPONSE de SANTA\n");
+                if(response_propose_to_santa.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                    System.out.println("Recibido RESPONSE de SANTA ACCEPT_PROPOSAL. EMPEZANDO\n");
+                } else {
+                    System.out.println("Recibido RESPONSE de SANTA REJECT_PROPOSAL. FINALIZANDO\n");
+                    model.changeState(State.END_WORLD);
+                }
+                
+                 
+                
             }
             catch (FIPAException e){
                 System.err.println("Error en la ejecución: " + e.getMessage());
