@@ -13,6 +13,7 @@ import model.WorldPerceptionInterface;
 
 import elfo.ElfTranslatorAgent;
 import santa.SantaAgent;
+import rudolph.RudolphAgent;
 
 
 public class Launcher {
@@ -62,20 +63,21 @@ public class Launcher {
                 AgentController acE = cc.createNewAgent("ElfTranslator", 
                                         ElfTranslatorAgent.class.getCanonicalName(), 
                                         null);
+
                 
                 AgentController acS = cc.createNewAgent("Santa", 
                                         SantaAgent.class.getCanonicalName(), 
                                         null);
-                /*
-                AgentController acR = cc.createNewAgent("AgentP3", 
-                                        AgentP3.class.getCanonicalName(), 
-                                        new Object[]{environment});
-                */
+
+                AgentController acR = cc.createNewAgent("Rudolph", 
+                                        RudolphAgent.class.getCanonicalName(), 
+                                        null);
+                
                 
                 // Lanzamos los agentes ElfTranslator - Santa - Rudolph - AgentP3
                 acE.start();
                 acS.start();
-                // acR.start();
+                acR.start();
                 acHW.start();
 
             } catch (StaleProxyException ex) {
