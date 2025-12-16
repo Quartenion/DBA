@@ -51,14 +51,14 @@ public class Controller {
 
     // Clase interna para guardar la config de un mapa
     private static class MapConfig {
-        int agentX, agentY; // Fila, Columna (Ojo: en el txt X es Columna, Y es Fila)
-        int goalX, goalY;   // Ajustaremos según tu formato: Agent-x (col), Agent-y (row)
+        int agentR, agentC; 
+        int goalR, goalC;   
         
-        public MapConfig(int ax, int ay, int gx, int gy) {
-            this.agentX = ax; // Columna
-            this.agentY = ay; // Fila
-            this.goalX = gx;  // Columna
-            this.goalY = gy;  // Fila
+        public MapConfig(int ar, int ac, int gr, int gc) {
+            this.agentR = ar; // Fila
+            this.agentC = ac; // Columna
+            this.goalR = gr;  // Fila
+            this.goalC = gc;  // Columna
         }
     }
     
@@ -70,10 +70,10 @@ public class Controller {
         ArrayList<Pair<Integer,Integer>> coordRenos = new ArrayList<>();
         Pair<Integer,Integer> coordSanta;
         
-        public MapConfigP3(int ax, int ay, int gx, int gy, 
-                Pair<Integer,Integer> coordSanta, ArrayList<Pair<Integer,Integer>> coordRenos){
+        public MapConfigP3(int ar, int ac, int gr, int gc, 
+                    Pair<Integer,Integer> coordSanta, ArrayList<Pair<Integer,Integer>> coordRenos){
             
-            super(ax,ay,gx,gy);
+            super(ar,ac,gr,gc); 
             
             this.coordSanta = coordSanta;
             this.coordRenos = coordRenos;
@@ -139,7 +139,7 @@ public class Controller {
                         int gx = Integer.parseInt(parts[4].trim()); // Columna (X)
                         int gy = Integer.parseInt(parts[5].trim()); // Fila (Y)
                         
-                        mapConfigs.put(filename, new MapConfig(ax, ay, gx, gy));
+                        mapConfigs.put(filename, new MapConfig(ay, ax, gy, gx));
                         // System.out.println("Config cargada para: " + filename); // Debug
                     } catch (NumberFormatException e) {
                         System.err.println("Error parseando linea de config: " + line);
@@ -166,6 +166,8 @@ public class Controller {
      * en caso de que no esté en la configuración el mapa que mire en la estructura
      * que genera esta función.
      * 
+     * He considerado entonces que las coordenadas que se pasan en el archivo
+     * son X - Y --> Columna - Fila, por lo que al leerlo se lee invertido
      */
     private void loadP3configurations() {
         File configFile = new File(configFileP3Path);
@@ -196,8 +198,8 @@ public class Controller {
                     
                     // Añadimos
                     renosTemp.add(new Pair<>(
-                        Integer.valueOf(partes[0].trim()), 
-                        Integer.valueOf(partes[1].trim())
+                        Integer.valueOf(partes[1].trim()), 
+                        Integer.valueOf(partes[0].trim())
                     ));
                 }
 
@@ -210,8 +212,8 @@ public class Controller {
                 if (line != null) {
                     String cleanLine = line.replace("*", "").trim();
                     String[] partes = cleanLine.split(",");
-                    coordSanta.first  = Integer.valueOf(partes[0].trim());
-                    coordSanta.second = Integer.valueOf(partes[1].trim());
+                    coordSanta.first  = Integer.valueOf(partes[1].trim());
+                    coordSanta.second = Integer.valueOf(partes[0].trim());
                 }
                 
                 
@@ -219,19 +221,19 @@ public class Controller {
                 readNextTextLine(br);
                 
                 // Leemos la coordenada de agente
-                Integer ax = -2; // junk value
-                Integer ay = -2; // junk value
+                Integer ar = -2; // junk value
+                Integer ac = -2; // junk value
                 line = readNextTextLine(br);
                 if (line != null) {
                     String cleanLine = line.replace("*", "").trim();
                     String[] partes = cleanLine.split(",");
-                    ax = Integer.valueOf(partes[0].trim());
-                    ay = Integer.valueOf(partes[1].trim());
+                    ar = Integer.valueOf(partes[1].trim());
+                    ac = Integer.valueOf(partes[0].trim());
                 }
                 
                 // Creamos la configuración asociada al filename
-                MapConfigP3 config = new MapConfigP3(ax, ay, -1, -1, coordSanta, renosTemp);
-                System.out.println(" -> Loaded: " + filename + " | Agent: " + ax + "," + ay 
+                MapConfigP3 config = new MapConfigP3(ar, ac, -1, -1, coordSanta, renosTemp);
+                System.out.println(" -> Loaded: " + filename + " | Agent: " + ar + "," + ac 
                                             + " | Reindeers: " + renosTemp.size());
                 
                 // Colocamos configuración en el map
@@ -612,12 +614,10 @@ public class Controller {
             // Buscamos en nuestro mapa de configuraciones cargado previamente
             if (mapConfigs.containsKey(fileName)) {
                 MapConfig cfg = mapConfigs.get(fileName);
-                // OJO: En el txt: X = Columna, Y = Fila.
-                // setAgentPosition(FILA, COLUMNA)
-                startR = cfg.agentY; // Fila
-                startC = cfg.agentX; // Columna
-                goalR = cfg.goalY;   // Fila
-                goalC = cfg.goalX;   // Columna
+                startR = cfg.agentR; // Fila
+                startC = cfg.agentC; // Columna
+                goalR = cfg.goalR;   // Fila
+                goalC = cfg.goalC;   // Columna
             } else {
                 System.out.println("Configuracion no encontrada para " + fileName + ". Usando defaults.");
             }
