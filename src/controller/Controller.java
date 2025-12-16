@@ -196,11 +196,12 @@ public class Controller {
                     String cleanLine = line.replace("*", "").trim();
                     String[] partes = cleanLine.split(",");
                     
+                    int col = Integer.valueOf(partes[0].trim()); // X del archivo = columna
+                    int row = Integer.valueOf(partes[1].trim()); // Y del archivo = fila
+                    
                     // Añadimos
-                    renosTemp.add(new Pair<>(
-                        Integer.valueOf(partes[1].trim()), 
-                        Integer.valueOf(partes[0].trim())
-                    ));
+                    renosTemp.add(new Pair<>(row, col));
+                    System.out.println("  Reno añadido: fila=" + row + ", col=" + col);
                 }
 
                 // Consumimos cabecera santa
@@ -212,8 +213,12 @@ public class Controller {
                 if (line != null) {
                     String cleanLine = line.replace("*", "").trim();
                     String[] partes = cleanLine.split(",");
-                    coordSanta.first  = Integer.valueOf(partes[1].trim());
-                    coordSanta.second = Integer.valueOf(partes[0].trim());
+                    
+                    int col = Integer.valueOf(partes[0].trim()); // X del archivo = columna
+                    int row = Integer.valueOf(partes[1].trim()); // Y del archivo = fila
+                    
+                    coordSanta = new Pair<>(row, col);
+                    System.out.println("  Santa en: fila=" + row + ", col=" + col);
                 }
                 
                 
@@ -227,8 +232,12 @@ public class Controller {
                 if (line != null) {
                     String cleanLine = line.replace("*", "").trim();
                     String[] partes = cleanLine.split(",");
-                    ar = Integer.valueOf(partes[1].trim());
-                    ac = Integer.valueOf(partes[0].trim());
+                    
+                    if (partes.length >= 2) {
+                        ac = Integer.valueOf(partes[0].trim()); // X = columna
+                        ar = Integer. valueOf(partes[1].trim()); // Y = fila
+                        System.out.println("  Agente inicial: fila=" + ar + ", col=" + ac);
+                    }
                 }
                 
                 // Creamos la configuración asociada al filename
@@ -472,11 +481,36 @@ public class Controller {
                 // B) COMPROBAR SI SE ALCANZO EL GOAL
                 // Detiene la logica del agente y del controlador
                 if (model.isGoalReached()) {
-                    this.model.stop();
-                    this.isRunning = false;
-                    view.setRunButtonSelected(false);
-                    view.addLogEntry("¡OBJETIVO ALCANZADO! - Stop");
-                    view.setMapSelectorEnabled(true);
+                    // Verificar si hay más renos por encontrar
+                    if (model.hasMoreGoals()) {
+                        int renosEncontrados = model.getGoalsReached();
+                        int totalRenos = model.getTotalGoals();
+
+                        view. addLogEntry("✅ ¡Reno " + renosEncontrados + "/" + totalRenos + " encontrado!");
+
+                        // Cambiar al siguiente reno
+                        model.moveToNextGoal();
+
+                        if (model.hasMoreGoals()) {
+                            view.addLogEntry("🦌 Siguiente objetivo: Reno en (" + 
+                                model.getGoalX() + ", " + model.getGoalY() + ")");
+                        } else {
+                            // Todos los renos encontrados
+                            view.addLogEntry("🎉 ¡TODOS LOS RENOS RESCATADOS!");
+                            this.model.stop();
+                            this.isRunning = false;
+                            view.setRunButtonSelected(false);
+                            view.setMapSelectorEnabled(true);
+                        }
+
+                    } else {
+                        // Objetivo único alcanzado (mapa P2)
+                        this.model.stop();
+                        this.isRunning = false;
+                        view.setRunButtonSelected(false);
+                        view.addLogEntry("¡OBJETIVO ALCANZADO!  - Stop");
+                        view.setMapSelectorEnabled(true);
+                    }
                 }
             }
         });
@@ -491,6 +525,8 @@ public class Controller {
         view.setAgentPosition(model.getAgentX(), model.getAgentY());
         view.setGoalReached(model.isGoalReached());
         view.setGoalPosition(model.getGoalX(), model.getGoalY());
+        
+        view.setReindeerProgress(model.getGoalsReached(), model.getTotalGoals());
     }
     
     private void initializeMapSelector() {
@@ -569,6 +605,11 @@ public class Controller {
         // Añade un log 
         String mapName = new File(rutaArchivo).getName();
         view.addLogEntry("Mapa cargado: " + mapName);
+        
+        System.out.println("=== RESTART COMPLETO ===");
+        System.out.println("  Agente en: (" + model.getAgentX() + ", " + model.getAgentY() + ")");
+        System.out.println("  Goal en: (" + model.getGoalX() + ", " + model.getGoalY() + ")");
+        System.out.println("  Renos totales: " + model.getTotalGoals());
     }
     
     
@@ -618,13 +659,41 @@ public class Controller {
                 startC = cfg.agentC; // Columna
                 goalR = cfg.goalR;   // Fila
                 goalC = cfg.goalC;   // Columna
+                
+                // Comprobamos si es mapa de P3
+                if (cfg instanceof MapConfigP3) {
+                    MapConfigP3 p3cfg = (MapConfigP3) cfg;
+
+                    view.addLogEntry("🎄 Mapa P3 detectado - Modo Rescate de Renos");
+                    view.addLogEntry("📍 Renos a rescatar: " + p3cfg.coordRenos. size());
+
+                    // Inicializar la cola de objetivos en el Environment
+                    model.initializeGoals(p3cfg.coordRenos);
+                    
+                    // ✅ VERIFICAR QUE EL PRIMER GOAL SE HAYA ESTABLECIDO
+                    System.out.println("DEBUG: Primer goal establecido en (" + model.getGoalX() + ", " + model.getGoalY() + ")");
+
+                    // El primer goal ya se establece automáticamente en initializeGoals()
+                    // Pero lo confirmamos aquí para estar seguros
+                    if (model.hasMoreGoals()) {
+                        view.addLogEntry("🦌 Primer objetivo:  Reno en " + 
+                            "(" + model.getGoalX() + ", " + model.getGoalY() + ")");
+                    }
+                } else {
+                    // Mapa P2 tradicional
+                    model.setGoalPosition(goalR, goalC);
+                    view.addLogEntry("🎯 Mapa P2 - Objetivo único en (" + goalR + ", " + goalC + ")");
+                }
             } else {
                 System.out.println("Configuracion no encontrada para " + fileName + ". Usando defaults.");
             }
 
             // Aplicamos las posiciones al entorno logico del Agente
             this.model.setAgentPosition(startR, startC);
-            this.model.setGoalPosition(goalR, goalC);
+            // (en P3 ya se estableció en initializeGoals())
+            if (!(mapConfigs.get(fileName) instanceof MapConfigP3)) {
+                this.model.setGoalPosition(goalR, goalC);
+            }
             
         } catch (IOException | NumberFormatException e) {
             System.err.println("Error al leer el archivo de mapa: " + e.getMessage());

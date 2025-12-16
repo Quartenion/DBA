@@ -251,22 +251,28 @@ public class Environment {
     * Inicializa la cola de objetivos con las coordenadas de los renos
     * @param reindeerCoords Lista de coordenadas (row, col)
     */
-   public synchronized void initializeGoals(ArrayList<Pair<Integer, Integer>> reindeerCoords) {
-       goalQueue.clear();
-       goalsReached = 0;
+    public synchronized void initializeGoals(ArrayList<Pair<Integer, Integer>> reindeerCoords) {goalQueue.clear();
+        goalsReached = 0;
 
-       for (Pair<Integer, Integer> coord : reindeerCoords) {
-           goalQueue.offer(coord); // offer() == add(), pero no da Exception cuando falla, devuelve false
-       }
+        System.out.println("=== initializeGoals() llamado ===");
+        System.out.println("Coordenadas recibidas: " + reindeerCoords.size());
 
-       totalGoals = goalQueue.size();
+        for (Pair<Integer, Integer> coord : reindeerCoords) {
+            goalQueue.offer(coord);
+            System.out.println("  Añadido a cola: (" + coord.first + ", " + coord.second + ")");
+        }
 
-       // Establecer el primer goal
-       if (!goalQueue.isEmpty()) {
-           Pair<Integer, Integer> firstGoal = goalQueue.peek(); // peek() toma el primer valor, pero no lo elimina
-           setGoalPosition(firstGoal.first, firstGoal.second);
-       }
-   }
+        totalGoals = goalQueue.size();
+        System.out.println("Total goals en cola: " + totalGoals);
+
+        if (! goalQueue.isEmpty()) {
+            Pair<Integer, Integer> firstGoal = goalQueue.peek();
+            setGoalPosition(firstGoal. first, firstGoal.second);
+            System.out.println("=== Primer goal establecido:  (" + goalX + ", " + goalY + ") ===");
+        } else {
+            System.err.println("ERROR: La cola está vacía después de inicializar");
+        }
+    }
 
    /**
     * Marca el goal actual como alcanzado y carga el siguiente

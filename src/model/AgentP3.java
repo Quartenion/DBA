@@ -61,7 +61,6 @@ public class AgentP3 extends Agent {
     @Override
     protected void setup(){
         // 1. Recuperacion de argumentos (El entorno)
-        
         Object[] args = getArguments();
         if (args != null && args.length > 0 && args[0] instanceof Environment) {
             this.model = (Environment) args[0];
@@ -70,7 +69,7 @@ public class AgentP3 extends Agent {
         }
         
         // 2. Añadir comportamiento principal
-        addBehaviour(new startSearchBehaviour());
+        // addBehaviour(new startSearchBehaviour());
         addBehaviour(new reactiveAgentBehaviour(this, ACTION_TIME));
         System.out.println("=== SetUp completado agente AgentP3 ===");
     }
