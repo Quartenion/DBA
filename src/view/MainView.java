@@ -142,4 +142,10 @@ public class MainView extends JFrame {
             infoPanel.setMapSelectorEnabled(enabled);
         }
     }
+    
+    public void setReindeerProgress(int found, int total) {
+        if (infoPanel != null) {
+            infoPanel.setReindeerProgress(found, total);
+        }
+    }
 }

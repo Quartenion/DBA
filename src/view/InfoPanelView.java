@@ -18,6 +18,7 @@ public class InfoPanelView extends JPanel {
     private JLabel agentPosLabel;
     private JLabel goalPosLabel;
     private JLabel goalReachedLabel;
+    private JLabel reindeerProgressLabel;
 
     // Componentes de Control --------------------------------------------------
     private JComboBox<String> mapSelector;
@@ -86,6 +87,7 @@ public class InfoPanelView extends JPanel {
         agentPosLabel = new JLabel("Agente: (0,0)");
         goalPosLabel = new JLabel("Objetivo: (0,0)");
         goalReachedLabel = new JLabel("Objetivo alcanzado: false");
+        reindeerProgressLabel = new JLabel("Renos:  0/0");
 
         // Estilos de fuente base
         Font font = new Font("SansSerif", Font.PLAIN, 12);
@@ -93,11 +95,13 @@ public class InfoPanelView extends JPanel {
         agentPosLabel.setFont(font);
         goalPosLabel.setFont(font);
         goalReachedLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
+        reindeerProgressLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
 
         panel.add(actionsLabel);
         panel.add(agentPosLabel);
         panel.add(goalPosLabel);
         panel.add(goalReachedLabel);
+        panel.add(reindeerProgressLabel);
 
         return panel;
     }
@@ -249,5 +253,14 @@ public class InfoPanelView extends JPanel {
     
     public void setMapSelectorEnabled(boolean enabled) {
         mapSelector.setEnabled(enabled);
+    }
+    
+    public void setReindeerProgress(int found, int total) {
+        if (total > 0) {
+            reindeerProgressLabel.setText("🦌 Renos:  " + found + "/" + total);
+            reindeerProgressLabel.setVisible(true);
+        } else {
+            reindeerProgressLabel.setVisible(false);
+        }
     }
 }
