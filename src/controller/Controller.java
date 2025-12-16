@@ -29,6 +29,7 @@ import model.AgentP3;
 import model.Environment;
 import model.State;
 import model.World;
+import rudolph.RudolphAgent;
 import view.MainView;
 
 public class Controller {
@@ -667,29 +668,33 @@ public class Controller {
                 goalC = cfg.goalC;   // Columna
                 
                 
-                // Nos cargamos el agente mediante bombardeada
+                // Nos cargamos el agente y rudolph mediante bombardeada
                 try{
                     AgentController acViejo = cc.getAgent("AgentP3");
-                    acViejo.kill();
-                    Thread.sleep(300);
+                    acViejo.kill();             
+                    Thread.sleep(300); 
                 }
                 catch (ControllerException e){
-                    System.out.println("El agente no existía, no hace falta matarlo.");
-                } catch (InterruptedException ex) {
+                    System.out.println("El agente P3 no existía, no hace falta matarlo.");
+                } 
+                catch (InterruptedException ex) {
                     Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 
+                // Matamos a rudolph
+                try{
+                    AgentController rudolphViejo = cc.getAgent("Rudolph");
+                    rudolphViejo.kill();          
+                    Thread.sleep(300); 
+                }
+                catch (ControllerException e){
+                    System.out.println("El agente rudolph no existía, no hace falta matarlo.");
+                } 
+                catch (InterruptedException ex) {
+                    Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 // Verificamos si es un mapa de P3, le pasamos los argumentos indicados
-                if (cfg instanceof MapConfigP3){
-                    // CÓDIGO NUEVO PARA EL REINICIO Y COMIENZO DE INSTANCIA P3
-                    
-                    // Faltaría añadir aquí la lógica que ordena el reinicio
-                    // de los otros agentes o se los carga y reinicia
-                    
-                    // En el caso del elfo no lo reinicio porque en principio 
-                    // no haría falta
-                    
-                    // Simulamos a rudolph
+                if (cfg instanceof MapConfigP3){// Simulamos a rudolph
                     MapConfigP3 p3cfg = (MapConfigP3) cfg;
 
                     // Inicializar la cola de objetivos en el Environment
@@ -698,10 +703,17 @@ public class Controller {
                     this.model.itsP3setSantaIn();
                     
                     try {
+                        // Creamos los agentes de nuevo
                         AgentController acHW = cc.createNewAgent("AgentP3",
                                 AgentP3.class.getCanonicalName(),
                                 new Object[]{this.model, true});
+                        
+                        AgentController acRU = cc.createNewAgent("Rudolph", 
+                                RudolphAgent.class.getCanonicalName(),
+                                new Object[]{p3cfg.coordRenos});
 
+                        // Iniciamos los agentes
+                        acRU.start();
                         acHW.start();
                     } catch (StaleProxyException ex) {Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);}
                     

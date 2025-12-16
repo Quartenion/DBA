@@ -35,7 +35,7 @@ public class ElfTranslatorAgent extends Agent {
                     
                     // Sacamos el contenido
                     String content = translateMSG.getContent();
-                    System.out.println("=== ElfTranslator recibe mensaje REQUEST: (|" + content + "|)");
+                    System.out.println("=== ElfTranslator recibe mensaje REQUEST: (" + content + ") ===");
                     
                     // Validamos el agente
                     String[] parts = content.trim().split("\\s+"); // Split por espacios
@@ -66,7 +66,10 @@ public class ElfTranslatorAgent extends Agent {
                         case "Hyvää" -> {
                             // Verifica estructura: "Hyvää jolua ... Nähdään pian"
                             // (Asegúrate de ajustar los índices según tu lógica exacta)
-                            if (parts.length >= 4 && "jolua".equals(parts[1])) {
+                            if (parts.length >= 4 && "jolua".equals(parts[1])
+                                && "Nähdään".equals(parts[parts.length-2])
+                                && "pian".equals(parts[parts.length - 1])) {
+                                
                                 translateReply.setPerformative(ACLMessage.INFORM);
                                 
                                 // Lógica Regex recuperada
@@ -100,7 +103,7 @@ public class ElfTranslatorAgent extends Agent {
 
                 // DEBUG SIMULATOR
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(2000);
                 } catch (InterruptedException ex) {
                     Logger.getLogger(ElfTranslatorAgent.class.getName()).log(Level.SEVERE, null, ex);
                 }

@@ -34,7 +34,7 @@ public class InfoPanelView extends JPanel {
      // Constructor principal. Configura el layout y los estilos base
     public InfoPanelView() {
         setLayout(new GridBagLayout());
-        setPreferredSize(new Dimension(700, 600));
+        setPreferredSize(new Dimension(550, 600));
         setBackground(new Color(245, 245, 245));
         setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.GRAY), "Panel de Información"));
