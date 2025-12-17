@@ -46,6 +46,7 @@ public class AgentP3 extends Agent {
     private final int ACTION_TIME = 50; // Tiempo entre ticks
     private String lastMove = null;      // Guarda la ultima accion efectiva ("UP", "DOWN", etc...)
                                          // Sirve para evitar que se realice una accion completamente opuesta
+    // Codigo secreto que inicia como 0 y toma el valor que le de santa
     private int secret_code = 0;
     
     // Usamos IDs únicos de comunicación para cada uno de los agentes ya
@@ -53,6 +54,7 @@ public class AgentP3 extends Agent {
     private final String TRASLATION_ID = "traslation_elf_";
     private final String SANTA_MSG_ID  = "santa_";
     private final String RUDOLPH_REINDEER_ID = "reindeer_";
+    
     
     
     // Configuración de sensores: 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
@@ -125,59 +127,83 @@ public class AgentP3 extends Agent {
         public void action() {
             System.out.println("===Comienza el startSearch del AgentP3===");
             
-            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME)); 
-            msg.setConversationId(TRASLATION_ID);
-            msg.setContent("Bro propuesta a comenzar ejecución "
+            ACLMessage msg_translation = new ACLMessage(ACLMessage.REQUEST);
+            msg_translation.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME)); 
+            msg_translation.setConversationId(TRASLATION_ID);
+            msg_translation.setContent("Bro propuesta a comenzar ejecución "
                                                + "de rescate de renos, en plan");
-            myAgent.send(msg);
+            myAgent.send(msg_translation);
             System.out.println("Enviado REQUEST de traducir\n");
             
-            ACLMessage response = myAgent.blockingReceive();
+            ACLMessage response_translate = myAgent.blockingReceive();
             
             System.out.println("Recibido RESPONSE de traducir\n");
             
             try {             
                 // Administración de errores
-                if (!response.getConversationId().equals(TRASLATION_ID)){
+                if (!response_translate.getConversationId().equals(TRASLATION_ID)){
                     throw new FIPAException("Por alguna razón el AgentP3 recibe"
                             + " un mensaje de otro ID cuando espera la traducción " 
-                            + response.getContent());
+                            + response_translate.getContent());
                 }
 
-                if (response.getPerformative() != ACLMessage.INFORM){
+                if (response_translate.getPerformative() != ACLMessage.INFORM){
                     throw new FIPAException("Agente P3 no ha recibido INFORM, probablemente"
                             + " haya recibido un refuse por error en el formato del mensaje: " 
-                            + response.getContent());
+                            + response_translate.getContent());
                 }
                 
                 // DEBUG SIMULATOR
                 Thread.sleep(1000);
                 
-                System.out.println("\n\nMensaje verificado por agente: " + response.getContent() + " procedemos a enviarselo a SANTA");
+                System.out.println("\n\nMensaje verificado por agente: " + response_translate.getContent() + " procedemos a enviarselo a SANTA");
                 ACLMessage msg_propose_to_santa = new ACLMessage(ACLMessage.PROPOSE);
                 msg_propose_to_santa.addReceiver(new AID("Santa", AID.ISLOCALNAME)); 
                 msg_propose_to_santa.setConversationId(SANTA_MSG_ID);
-                msg_propose_to_santa.setContent(response.getContent());
-                
+                msg_propose_to_santa.setContent(response_translate.getContent());
                 myAgent.send(msg_propose_to_santa);
                 System.out.println("Enviado PROPOSE de cosigo secreto\n");
                 
                 ACLMessage response_propose_to_santa = myAgent.blockingReceive();
                 
                 System.out.println("Recibido RESPONSE de SANTA\n");
+                
                 if(response_propose_to_santa.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                     System.out.println("Recibido RESPONSE de SANTA ACCEPT_PROPOSAL. EMPEZANDO\n");
                 } else {
                     throw new FIPAException("Recibido RESPONSE de SANTA REJECT_PROPOSAL. FINALIZANDO\n");
-                } 
+                }
                 
-                // Extraemos el código y lo ponemos en la variable
-                String[] parts = response_propose_to_santa.getContent().trim().split("\\s+");
+                // Ahora traducimos el mensaje de santa para obtener el codigo
+                msg_translation.setContent(response_propose_to_santa.getContent());
+                myAgent.send(msg_translation);
+                
+                response_translate = myAgent.blockingReceive();
+                
+                // Administración de errores
+                if (!response_translate.getConversationId().equals(TRASLATION_ID)){
+                    throw new FIPAException("Por alguna razón el AgentP3 recibe"
+                            + " un mensaje de otro ID cuando espera la traducción (2) " 
+                            + response_translate.getContent());
+                }
+
+                if (response_translate.getPerformative() != ACLMessage.INFORM){
+                    throw new FIPAException("Agente P3 no ha recibido INFORM, probablemente"
+                            + " haya recibido un refuse por error en el formato del mensaje: (2) " 
+                            + response_translate.getContent());
+                }
+                
+                // Si todo ha ido bien el codigo
+                String[] parts = response_translate.getContent().trim().split("\\s+");
+                
+                System.out.println("\n\nEl codigo secreto (AGENTE) es: " + parts[1]);
+                
                 secret_code = Integer.parseInt(parts[1]);
                 
-            }
-            catch (FIPAException e){
+                // Ya tenemos el codigo somos felices, termina este comportamiento
+                // y puede empezar la ejecucion
+                
+            } catch (FIPAException e){
                 System.err.println("Error en la ejecución: " + e.getMessage());
                 model.changeState(State.END_WORLD); // Terminamos la ejecución
             } catch (InterruptedException ex) {
@@ -185,6 +211,12 @@ public class AgentP3 extends Agent {
             }
         }
     }
+    
+    
+    
+    
+    
+    
     
     /**
      * AUN NO HA SIDO MODIFICADO
@@ -213,7 +245,7 @@ public class AgentP3 extends Agent {
         public reactiveAgentBehaviourP3(Agent a, long period){
             super(a, period);
         }
-        
+
         // FUNCIONES  DE COMUNICACION
         
         // FUNCIONES RUDOLPH
