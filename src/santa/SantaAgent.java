@@ -85,6 +85,7 @@ public class SantaAgent extends Agent {
 
                             // Validar palabra clave especifica "coordenadas"
                             if (parts.length < 3 || !KEYWORD_COORD.equals(parts[2])) {
+                                System.out.println("MENSAJE QUE SE ESTA ENVIANDO: " + msg.getContent());
                                 throw new FIPAException("Falta la palabra clave '" + KEYWORD_COORD + "'");
                             }
 
