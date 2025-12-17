@@ -54,6 +54,9 @@ public class Controller {
     private double dragOffsetRow = 0; 
     private double dragOffsetCol = 0; 
     
+    // Cache de la última configuración P3 cargada (para visualización)
+    private MapConfigP3 lastP3Config = null; 
+    
     // Cache de configuraciones de mapas: NombreArchivo -> Configuracion
     private Map<String, MapConfig> mapConfigs = new HashMap<>();
 
@@ -584,6 +587,16 @@ public class Controller {
         // con las nuevas dimensiones (filas/columnas) leidas en read_map()
         view.resetMapView(modelWorld, model);
 
+        // Si es un mapa P3, configurar visualización de renos y Santa
+        if (lastP3Config != null) {
+            view.setReindeerPositions(lastP3Config.coordRenos);
+            view.setSantaPosition(lastP3Config.coordSanta);
+        } else {
+            // Mapa P2: limpiar visualizaciones
+            view.setReindeerPositions(null);
+            view.setSantaPosition(null);
+        }
+
         // Resetea el estado de los botones visualmente (desmarca los botones)
         view.resetToggles(); 
 
@@ -703,6 +716,9 @@ public class Controller {
                 // Verificamos si es un mapa de P3, le pasamos los argumentos indicados
                 if (cfg instanceof MapConfigP3){// Simulamos a rudolph
                     MapConfigP3 p3cfg = (MapConfigP3) cfg;
+                    
+                    // Guardar configuración P3 para visualización
+                    this.lastP3Config = p3cfg;
 
                     // El agente obtiene los goals por comunicación con Rudolph
                     this.model.setSantaReachedFalse();
@@ -729,6 +745,9 @@ public class Controller {
                     
                 }
                 else { // En caso de ser un mapa de P2 creamos el agente y ya.
+                    // Limpiar configuración P3
+                    this.lastP3Config = null;
+                    
                     // Creamos un nuevo agente y lo arrancamos con los argumentos
                     this.model.setSantaReachedTrue();
                     
