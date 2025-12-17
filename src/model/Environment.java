@@ -56,6 +56,7 @@ public class Environment {
      * 
      */
     private boolean santaReached = false;
+    private boolean santaConfirmedReached = false;
 
     public Environment(WorldPerceptionInterface w) {
         this.visitedCells = new HashSet<>();
@@ -321,7 +322,14 @@ public class Environment {
     public synchronized void setSantaReachedFalse(){
         this.santaReached = false;
     }
-   
+
+    public synchronized boolean isSantaConfirmedReached() {
+        return santaConfirmedReached;
+    }
+
+    public synchronized void setSantaConfirmedReached(boolean santaConfirmedReached) {
+        this.santaConfirmedReached = santaConfirmedReached;
+    }
 
     /**
      * @return Lista de goals pendientes (para visualización)

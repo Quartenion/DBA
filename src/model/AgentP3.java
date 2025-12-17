@@ -354,9 +354,13 @@ public class AgentP3 extends Agent {
             msgElf.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
             msgElf.setContent("Bro coordenadas en plan");
             
+            System.out.println("=== Se intenta traducir" + msgElf.getContent());
+            
             myAgent.send(msgElf);
             
             ACLMessage translation = myAgent.blockingReceive();
+            
+            System.out.println("=== RESULTADO DE TRADUCCION" + translation.getContent());
             
             // Le enviamos el mensaje al Santa
             ACLMessage msgSanta = new ACLMessage(ACLMessage.QUERY_REF);
@@ -393,16 +397,25 @@ public class AgentP3 extends Agent {
             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
             msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
             msg.setContent("Bro llegado en plan");
-            msg.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code));
 
             // 2. Enviar
             myAgent.send(msg);
 
             // 3. Espera bloqueante de confirmacion 
-            ACLMessage reply = myAgent.blockingReceive();
+            ACLMessage translation = myAgent.blockingReceive();
 
-            if (reply != null) {
+            if (translation != null) {
+                // 1. Informar a santa
+                ACLMessage msgSanta = new ACLMessage(ACLMessage.INFORM);
+                msgSanta.addReceiver(new AID("Santa", AID.ISLOCALNAME));
+                msgSanta.setContent(translation.getContent());
+                
+                myAgent.send(msgSanta);
+                
+                ACLMessage reply = myAgent.blockingReceive();
+                
                 System.out.println("=== [SANTA] confirma recepcion: " + reply.getContent());
+                model.setSantaConfirmedReached(true);
             }
         }
         
@@ -419,6 +432,9 @@ public class AgentP3 extends Agent {
                 model.setMapChanged(false);
             }
             
+            if (model.isSantaConfirmedReached()) {
+                return;
+            }
             
             // APLICAMOS CAMBIOS DE P3
             // Si esto se cumple significa que no hay GOAL, solicitamos nuevo
