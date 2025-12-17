@@ -55,7 +55,10 @@ public class Controller {
     private double dragOffsetCol = 0; 
     
     // Cache de la última configuración P3 cargada (para visualización)
-    private MapConfigP3 lastP3Config = null; 
+    private MapConfigP3 lastP3Config = null;
+    
+    // Lista mutable de renos pendientes (se van eliminando conforme se recogen)
+    private ArrayList<Pair<Integer, Integer>> remainingReindeer = null;
     
     // Cache de configuraciones de mapas: NombreArchivo -> Configuracion
     private Map<String, MapConfig> mapConfigs = new HashMap<>();
@@ -497,9 +500,18 @@ public class Controller {
                     
                     // Check if Santa is reached P3
                     if (!model.isSantaReached()) {
-
-                        // poner log aunque sea cuando se encuentre reno :(
+                        // P3: Reno encontrado
+                        
+                        // Eliminar el reno alcanzado de la lista de visualización
+                        if (remainingReindeer != null) {
+                            Pair<Integer, Integer> currentGoal = new Pair<>(model.getGoalR(), model.getGoalC());
+                            remainingReindeer.remove(currentGoal);
+                            // Actualizar visualización sin el reno recogido
+                            view.setReindeerPositions(remainingReindeer);
+                        }
+                        
                         view.addLogEntry("¡Reno encontrado!");
+                        
                         // Vaciar el goal para que el agente solicite el siguiente
                         model.setGoalPosition(-1, -1);
                         
@@ -589,7 +601,7 @@ public class Controller {
 
         // Si es un mapa P3, configurar visualización de renos y Santa
         if (lastP3Config != null) {
-            view.setReindeerPositions(lastP3Config.coordRenos);
+            view.setReindeerPositions(remainingReindeer); // Lista mutable que se irá reduciendo
             view.setSantaPosition(lastP3Config.coordSanta);
         } else {
             // Mapa P2: limpiar visualizaciones
@@ -719,6 +731,9 @@ public class Controller {
                     
                     // Guardar configuración P3 para visualización
                     this.lastP3Config = p3cfg;
+                    
+                    // Inicializar lista de renos restantes (copia mutable)
+                    this.remainingReindeer = new ArrayList<>(p3cfg.coordRenos);
 
                     // El agente obtiene los goals por comunicación con Rudolph
                     this.model.setSantaReachedFalse();
@@ -747,6 +762,7 @@ public class Controller {
                 else { // En caso de ser un mapa de P2 creamos el agente y ya.
                     // Limpiar configuración P3
                     this.lastP3Config = null;
+                    this.remainingReindeer = null;
                     
                     // Creamos un nuevo agente y lo arrancamos con los argumentos
                     this.model.setSantaReachedTrue();
