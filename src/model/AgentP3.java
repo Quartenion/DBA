@@ -1,19 +1,24 @@
 //
 package model;
 
+import controller.Pair;
 import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.core.AID;
+import static jade.core.Agent.D_MIN;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 
 import jade.domain.FIPAException;
+import jade.lang.acl.UnreadableException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // Agente Reactivo P2.
 // Implementa un algoritmo de navegacion tipo Bug Algorithm
@@ -39,15 +44,18 @@ import java.util.logging.Logger;
 public class AgentP3 extends Agent {
 
     private Environment model;
-    private final int ACTION_TIME = 50; // Tiempo entre ticks
+    private final int ACTION_TIME = 10; // Tiempo entre ticks
     private String lastMove = null;      // Guarda la ultima accion efectiva ("UP", "DOWN", etc...)
                                          // Sirve para evitar que se realice una accion completamente opuesta
+    // Codigo secreto que inicia como 0 y toma el valor que le de santa
+    private int secret_code = 0;
     
     // Usamos IDs únicos de comunicación para cada uno de los agentes ya
     // que solo tendrá una vía abierta al mismo tiempo con cada uno de ellos
     private final String TRASLATION_ID = "traslation_elf_";
     private final String SANTA_MSG_ID  = "santa_";
     private final String RUDOLPH_REINDEER_ID = "reindeer_";
+    
     
     
     // Configuración de sensores: 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
@@ -120,55 +128,83 @@ public class AgentP3 extends Agent {
         public void action() {
             System.out.println("===Comienza el startSearch del AgentP3===");
             
-            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME)); 
-            msg.setConversationId(TRASLATION_ID);
-            msg.setContent("Bro propuesta a comenzar ejecución "
+            ACLMessage msg_translation = new ACLMessage(ACLMessage.REQUEST);
+            msg_translation.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME)); 
+            msg_translation.setConversationId(TRASLATION_ID);
+            msg_translation.setContent("Bro propuesta a comenzar ejecución "
                                                + "de rescate de renos, en plan");
-            myAgent.send(msg);
+            myAgent.send(msg_translation);
             System.out.println("Enviado REQUEST de traducir\n");
             
-            ACLMessage response = myAgent.blockingReceive();
+            ACLMessage response_translate = myAgent.blockingReceive();
             
             System.out.println("Recibido RESPONSE de traducir\n");
             
             try {             
                 // Administración de errores
-                if (!response.getConversationId().equals(TRASLATION_ID)){
+                if (!response_translate.getConversationId().equals(TRASLATION_ID)){
                     throw new FIPAException("Por alguna razón el AgentP3 recibe"
                             + " un mensaje de otro ID cuando espera la traducción " 
-                            + response.getContent());
+                            + response_translate.getContent());
                 }
 
-                if (response.getPerformative() != ACLMessage.INFORM){
+                if (response_translate.getPerformative() != ACLMessage.INFORM){
                     throw new FIPAException("Agente P3 no ha recibido INFORM, probablemente"
                             + " haya recibido un refuse por error en el formato del mensaje: " 
-                            + response.getContent());
+                            + response_translate.getContent());
                 }
                 
                 // DEBUG SIMULATOR
                 Thread.sleep(1000);
                 
-                System.out.println("\n\nMensaje verificado por agente: " + response.getContent() + " procedemos a enviarselo a SANTA");
+                System.out.println("\n\nMensaje verificado por agente: " + response_translate.getContent() + " procedemos a enviarselo a SANTA");
                 ACLMessage msg_propose_to_santa = new ACLMessage(ACLMessage.PROPOSE);
                 msg_propose_to_santa.addReceiver(new AID("Santa", AID.ISLOCALNAME)); 
                 msg_propose_to_santa.setConversationId(SANTA_MSG_ID);
-                msg_propose_to_santa.setContent(response.getContent());
+                msg_propose_to_santa.setContent(response_translate.getContent());
                 myAgent.send(msg_propose_to_santa);
                 System.out.println("Enviado PROPOSE de cosigo secreto\n");
+                
                 ACLMessage response_propose_to_santa = myAgent.blockingReceive();
+                
                 System.out.println("Recibido RESPONSE de SANTA\n");
+                
                 if(response_propose_to_santa.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                     System.out.println("Recibido RESPONSE de SANTA ACCEPT_PROPOSAL. EMPEZANDO\n");
                 } else {
-                    System.out.println("Recibido RESPONSE de SANTA REJECT_PROPOSAL. FINALIZANDO\n");
-                    model.changeState(State.END_WORLD);
+                    throw new FIPAException("Recibido RESPONSE de SANTA REJECT_PROPOSAL. FINALIZANDO\n");
                 }
                 
-                 
+                // Ahora traducimos el mensaje de santa para obtener el codigo
+                msg_translation.setContent(response_propose_to_santa.getContent());
+                myAgent.send(msg_translation);
                 
-            }
-            catch (FIPAException e){
+                response_translate = myAgent.blockingReceive();
+                
+                // Administración de errores
+                if (!response_translate.getConversationId().equals(TRASLATION_ID)){
+                    throw new FIPAException("Por alguna razón el AgentP3 recibe"
+                            + " un mensaje de otro ID cuando espera la traducción (2) " 
+                            + response_translate.getContent());
+                }
+
+                if (response_translate.getPerformative() != ACLMessage.INFORM){
+                    throw new FIPAException("Agente P3 no ha recibido INFORM, probablemente"
+                            + " haya recibido un refuse por error en el formato del mensaje: (2) " 
+                            + response_translate.getContent());
+                }
+                
+                // Si todo ha ido bien el codigo
+                String[] parts = response_translate.getContent().trim().split("\\s+");
+                
+                System.out.println("\n\nEl codigo secreto (AGENTE) es: " + parts[1]);
+                
+                secret_code = Integer.parseInt(parts[1]);
+                
+                // Ya tenemos el codigo somos felices, termina este comportamiento
+                // y puede empezar la ejecucion
+                
+            } catch (FIPAException e){
                 System.err.println("Error en la ejecución: " + e.getMessage());
                 model.changeState(State.END_WORLD); // Terminamos la ejecución
             } catch (InterruptedException ex) {
@@ -177,8 +213,8 @@ public class AgentP3 extends Agent {
         }
     }
     
+    
     /**
-     * AUN NO HA SIDO MODIFICADO
      * COPIA DE reactiveAgentBehaviour
      */
     class reactiveAgentBehaviourP3 extends TickerBehaviour {
@@ -204,19 +240,231 @@ public class AgentP3 extends Agent {
         public reactiveAgentBehaviourP3(Agent a, long period){
             super(a, period);
         }
+
+        // FUNCIONES  DE COMUNICACION
+        
+        // FUNCIONES RUDOLPH
+        /**
+         * @brief Makes the necessary communication with Rudolph to get
+         *        reindeers.
+         * 
+         * @returns A pair with the row and col of the next reindeer, in case
+         *          there is no more reindeers, it returns (-1, -1)
+         */
+        private Pair<Integer, Integer> getNextReindeer() {
+           
+            // Preparamos el mensaje de conversación para Rudolph
+            ACLMessage requestReindeer = new ACLMessage(ACLMessage.QUERY_REF);
+            requestReindeer.addReceiver(new AID("Rudolph", AID.ISLOCALNAME)); 
+            requestReindeer.setConversationId(RUDOLPH_REINDEER_ID);
+            
+            // Importante añadir cabecera el codigo
+            requestReindeer.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code));
+            
+            // Content es indiferente
+            requestReindeer.setContent("No tengo goal, dame el proximo reno");
+            
+            System.out.println("\nAgentP3 manda a Rudolph mensaje de peticion de reno\n");
+            
+            // Mandamos mensaje
+            myAgent.send(requestReindeer);
+            
+            // Esperamos por la respuesta de Rudolph 
+            ACLMessage responseReindeer = myAgent.blockingReceive();
+            
+            System.out.println("\nAgentP3 recibe respuesta, en teoría por Rudolph\n");
+            
+            try {
+                // Administración de errores
+                if (!responseReindeer.getConversationId().equals(RUDOLPH_REINDEER_ID)){
+                    throw new FIPAException("Por alguna razón el AgentP3 recibe"
+                            + " un mensaje de otro ID cuando espera un reno respuesta " 
+                            + responseReindeer.getContent());
+                }
+
+                if (responseReindeer.getPerformative() != ACLMessage.INFORM_REF 
+                    && responseReindeer.getPerformative() != ACLMessage.INFORM){
+                    throw new FIPAException("Agente P3 no ha recibido INFORM o INFORM_REF, probablemente"
+                            + " haya recibido un refuse por error en el formato del mensaje: " 
+                            + responseReindeer.getContent());
+                }
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(1000);
+            }
+            catch (FIPAException e){
+                System.err.println("Error en la ejecución: " + e.getMessage());
+                model.changeState(State.END_WORLD); // Terminamos la ejecución
+            } catch (InterruptedException ex) {
+                Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
+                model.changeState(State.END_WORLD); // Terminamos la ejecución
+            }
+            
+            // En este punto deberíamos de tener la respuesta validada, por lo que 
+            // falta recoger el nuevo Pair
+            
+            Pair<Integer,Integer> coord = new Pair<>(-1,-1);
+            
+            // En caso de que sea INFORM_REF significa que hay más renos
+            if (responseReindeer.getPerformative() == ACLMessage.INFORM_REF){
+                try {
+                    coord = (Pair<Integer,Integer>) responseReindeer.getContentObject();
+                } catch (UnreadableException ex) {
+                    Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
+                    System.err.println("\nNo se ha podido leer bien el objeto coordenada del reno\n");
+                }
+            }
+            
+            return coord;
+        }
+        
+        
+        // FUNCIONES SANTA (Quiero terminar)
+        private Pair<Integer, Integer> extraerCoordenadas(String message) { // ESTA FUNCION SIRVE TAMBIEN PARA LOS RENOS
+            try {
+                // Regex para buscar numeros enteros
+                Pattern p = Pattern.compile("-?\\d+");
+                Matcher m = p.matcher(message);
+
+                Integer r = null;
+                Integer c = null;
+
+                if (m.find()) r = Integer.valueOf(m.group()); // Primer numero encontrado
+                if (m.find()) c = Integer.valueOf(m.group()); // Segundo numero encontrado
+
+                if (r != null && c != null) {
+                    return new Pair<>(r, c);
+                }
+            } catch (Exception e) {
+                System.err.println("Error parseando coordenadas de [SANTA]: " + e.getMessage());
+            }
+            return null;
+        }
+        
+        private Pair<Integer, Integer> pedirCoordenadasSanta() {
+            System.out.println("=== Preguntando coordenadas a Santa ===");
+            
+            // Le enviamos el mensaje al ElfoTraductor
+            ACLMessage msgElf = new ACLMessage(ACLMessage.REQUEST);
+            msgElf.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msgElf.setContent("Bro coordenadas en plan");
+            
+            System.out.println("=== Se intenta traducir" + msgElf.getContent());
+            
+            myAgent.send(msgElf);
+            
+            ACLMessage translation = myAgent.blockingReceive();
+            
+            System.out.println("=== RESULTADO DE TRADUCCION" + translation.getContent());
+            
+            // Le enviamos el mensaje al Santa
+            ACLMessage msgSanta = new ACLMessage(ACLMessage.QUERY_REF);
+            msgSanta.addReceiver(new AID("Santa", AID.ISLOCALNAME));
+            msgSanta.setContent(translation.getContent());
+            msgSanta.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code)); 
+            
+            myAgent.send(msgSanta);
+            
+            ACLMessage reply = myAgent.blockingReceive();
+            
+            if (reply != null) {
+                // Le enviamos el mensaje al ElfoTraductor
+                msgElf.setContent(reply.getContent());
+
+                myAgent.send(msgElf);
+
+                ACLMessage translated = myAgent.blockingReceive();
+     
+                System.out.println("=== Respuesta de [SANTA] para las [COORDENADAS] recibida: " + translated.getContent());
+                // 4. Parsear las coordenadas del mensaje "Bro (x,y) en plan"
+                // Buscamos cualquier secuencia de digitos
+                return extraerCoordenadas(translated.getContent());
+            }   
+            
+            return null; 
+        }
+        
+        private void confirmarLlegadaSanta() {
+            System.out.println("=== Confirmando llegada a [SANTA] ===");
+
+            // 1. Preparar mensaje
+            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msg.setContent("Bro llegado en plan");
+
+            // 2. Enviar
+            myAgent.send(msg);
+            System.out.println("MENSAJE A TRADUCIR: " + msg.getContent());
+            // 3. Espera bloqueante de confirmacion 
+            ACLMessage translation = myAgent.blockingReceive();
+            System.out.println("MENSAJE TRADUCIDO: " + translation.getContent());
+            
+            if (translation != null) {
+                // 1. Informar a santa
+                ACLMessage msgSanta = new ACLMessage(ACLMessage.INFORM);
+                msgSanta.addReceiver(new AID("Santa", AID.ISLOCALNAME));
+                msgSanta.setContent(translation.getContent());
+                
+                myAgent.send(msgSanta);
+                
+                ACLMessage reply = myAgent.blockingReceive();
+                
+                System.out.println("=== [SANTA] confirma recepcion: " + reply.getContent());
+                model.setSantaConfirmedReached(true);
+            }
+        }
+        
         
         @Override
         public void onTick(){
             boolean isRunning = ((AgentP3) myAgent).isRunning();
             
-            // DETECCIÓN DE REINICIO (Flanco de subida)
+            // DETECCIÓN DE REINICIO (Flanco de subida) P2
             // Si ahora estamos corriendo, pero en el ultimo tick estábamos parados,
             // significa que el usuario le ha dado a "RUN" de nuevo (posiblemente mapa nuevo).
             if (model.isMapChanged()) {
                 resetMemory();
                 model.setMapChanged(false);
             }
+            
+            if (model.isSantaConfirmedReached()) {
+                return;
+            }
+            
+            // APLICAMOS CAMBIOS DE P3
+            // Si esto se cumple significa que no hay GOAL, solicitamos nuevo
+            if (model.getGoalR() < 0 || model.getGoalC() < 0){
 
+                // El caso de que no se haya llegado a santa aun
+                if (!model.isSantaReached()) {
+                    Pair<Integer,Integer> reindeerCoord = getNextReindeer();
+
+                    // Recibimos coordenada valida, hacemos set de goal
+                    if (reindeerCoord.first > 0 && reindeerCoord.second > 0){
+                        model.setGoalPosition(reindeerCoord.first, 
+                                                    reindeerCoord.second);
+                    }
+                    else {
+                        // La coordenada no es valida, o es que no hay mas renos
+                        // No contemplamos que la coordenada sea invalida
+                        // Preguntamos a santa directamente
+                        Pair<Integer,Integer> santaCoord = pedirCoordenadasSanta();
+                        model.setGoalPosition(santaCoord.first, 
+                                                    santaCoord.second);
+                        // Colocamos esto a true y la proxima vez que llegue al goal
+                        // terminara la ejecucion
+                        model.setSantaReachedTrue();
+                    }   
+                }
+                else {
+                    // El caso de que ya se haya llegado a santa 
+                    // Confirmamos la llegada y ya deberia de pararse todo
+                    // desde el controller
+                    confirmarLlegadaSanta();
+                    return;
+                }
+            }
+            
             // Si no está corriendo, salimos
             if (!isRunning) return;
             
@@ -246,8 +494,6 @@ public class AgentP3 extends Agent {
             // A. Verificar si hemos llegado
             if (model.isGoalReached()) {
                 System.out.println("!!! OBJETIVO ALCANZADO !!!");
-                ((AgentP3) myAgent).changeState(State.STANDBY);
-                model.stop();
                 return;
             }
 

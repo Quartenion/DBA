@@ -60,6 +60,7 @@ public class Environment {
      * 
      */
     private boolean santaReached = false;
+    private boolean santaConfirmedReached = false;
 
     public Environment(WorldPerceptionInterface w) {
         this.visitedCells = new HashSet<>();
@@ -167,6 +168,7 @@ public class Environment {
        this.goalsReached = 0;
        this.totalGoals = 0;
     }
+    
     
     // -------------------------------------------------------------------------
     // MAPA DE CALOR (MIGAJAS)
@@ -318,14 +320,21 @@ public class Environment {
     /**
      * Controller has to use this function for P2 maps
      */
-    public synchronized void itsP2setSantaAside(){
+    public synchronized void setSantaReachedTrue(){
         this.santaReached = true;
     }
     
-    public synchronized void itsP3setSantaIn(){
+    public synchronized void setSantaReachedFalse(){
         this.santaReached = false;
     }
-   
+
+    public synchronized boolean isSantaConfirmedReached() {
+        return santaConfirmedReached;
+    }
+
+    public synchronized void setSantaConfirmedReached(boolean santaConfirmedReached) {
+        this.santaConfirmedReached = santaConfirmedReached;
+    }
 
     /**
      * @return Lista de goals pendientes (para visualización)
