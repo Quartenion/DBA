@@ -7,6 +7,7 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.core.AID;
+import static jade.core.Agent.D_MIN;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -219,7 +220,6 @@ public class AgentP3 extends Agent {
     
     
     /**
-     * AUN NO HA SIDO MODIFICADO
      * COPIA DE reactiveAgentBehaviour
      */
     class reactiveAgentBehaviourP3 extends TickerBehaviour {
@@ -395,14 +395,48 @@ public class AgentP3 extends Agent {
         public void onTick(){
             boolean isRunning = ((AgentP3) myAgent).isRunning();
             
-            // DETECCIÓN DE REINICIO (Flanco de subida)
+            // DETECCIÓN DE REINICIO (Flanco de subida) P2
             // Si ahora estamos corriendo, pero en el ultimo tick estábamos parados,
             // significa que el usuario le ha dado a "RUN" de nuevo (posiblemente mapa nuevo).
             if (model.isMapChanged()) {
                 resetMemory();
                 model.setMapChanged(false);
             }
+            
+            
+            // APLICAMOS CAMBIOS DE P3
+            // Si esto se cumple significa que no hay GOAL, solicitamos nuevo
+            if (model.getGoalR() < 0 || model.getGoalC() < 0){
 
+                // El caso de que no se haya llegado a santa aun
+                if (!model.isSantaReached()) {
+                    Pair<Integer,Integer> reindeerCoord = getNextReindeer();
+
+                    // Recibimos coordenada valida, hacemos set de goal
+                    if (reindeerCoord.first > 0 && reindeerCoord.second > 0){
+                        model.setGoalPosition(reindeerCoord.first, 
+                                                    reindeerCoord.second);
+                    }
+                    else {
+                        // La coordenada no es valida, o es que no hay mas renos
+                        // No contemplamos que la coordenada sea invalida
+                        // Preguntamos a santa directamente
+                        Pair<Integer,Integer> santaCoord = pedirCoordenadasSanta();
+                        model.setGoalPosition(santaCoord.first, 
+                                                    santaCoord.second);
+                        // Colocamos esto a true y la proxima vez que llegue al goal
+                        // terminara la ejecucion
+                        model.setSantaReachedTrue();
+                    }   
+                }
+                else {
+                    // El caso de que ya se haya llegado a santa 
+                    // Confirmamos la llegada y ya deberia de pararse todo
+                    // desde el controller
+                    confirmarLlegadaSanta();
+                }
+            }
+            
             // Si no está corriendo, salimos
             if (!isRunning) return;
             
