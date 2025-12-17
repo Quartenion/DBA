@@ -314,11 +314,11 @@ public class Environment {
     /**
      * Controller has to use this function for P2 maps
      */
-    public synchronized void itsP2setSantaAside(){
+    public synchronized void setSantaReachedTrue(){
         this.santaReached = true;
     }
     
-    public synchronized void itsP3setSantaIn(){
+    public synchronized void setSantaReachedFalse(){
         this.santaReached = false;
     }
    
