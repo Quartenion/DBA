@@ -391,7 +391,7 @@ public class AgentP3 extends Agent {
 
             // 1. Preparar mensaje
             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msg.addReceiver(new AID("Santa", AID.ISLOCALNAME));
             msg.setContent("Bro llegado en plan");
             msg.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code));
 
@@ -450,6 +450,7 @@ public class AgentP3 extends Agent {
                     // Confirmamos la llegada y ya deberia de pararse todo
                     // desde el controller
                     confirmarLlegadaSanta();
+                    return;
                 }
             }
             
@@ -482,8 +483,6 @@ public class AgentP3 extends Agent {
             // A. Verificar si hemos llegado
             if (model.isGoalReached()) {
                 System.out.println("!!! OBJETIVO ALCANZADO !!!");
-                ((AgentP3) myAgent).changeState(State.STANDBY);
-                model.stop();
                 return;
             }
 
