@@ -1,6 +1,7 @@
 //
 package model;
 
+import controller.Pair;
 import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -14,6 +15,8 @@ import java.util.Map;
 import jade.domain.FIPAException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // Agente Reactivo P2.
 // Implementa un algoritmo de navegacion tipo Bug Algorithm
@@ -154,19 +157,19 @@ public class AgentP3 extends Agent {
                 msg_propose_to_santa.addReceiver(new AID("Santa", AID.ISLOCALNAME)); 
                 msg_propose_to_santa.setConversationId(SANTA_MSG_ID);
                 msg_propose_to_santa.setContent(response.getContent());
+                
                 myAgent.send(msg_propose_to_santa);
                 System.out.println("Enviado PROPOSE de cosigo secreto\n");
+                
                 ACLMessage response_propose_to_santa = myAgent.blockingReceive();
+                
                 System.out.println("Recibido RESPONSE de SANTA\n");
                 if(response_propose_to_santa.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                     System.out.println("Recibido RESPONSE de SANTA ACCEPT_PROPOSAL. EMPEZANDO\n");
                 } else {
                     System.out.println("Recibido RESPONSE de SANTA REJECT_PROPOSAL. FINALIZANDO\n");
                     model.changeState(State.END_WORLD);
-                }
-                
-                 
-                
+                } 
             }
             catch (FIPAException e){
                 System.err.println("Error en la ejecución: " + e.getMessage());
@@ -203,6 +206,76 @@ public class AgentP3 extends Agent {
 
         public reactiveAgentBehaviourP3(Agent a, long period){
             super(a, period);
+        }
+        
+        // FUNCIONES  DE COMUNICACION
+        
+        // FUNCIONES RUDOLPH
+        
+        // FUNCIONES SANTA (Quiero terminar)
+        private Pair<Integer, Integer> extraerCoordenadas(String message) { // ESTA FUNCION SIRVE TAMBIEN PARA LOS RENOS
+            try {
+                // Regex para buscar numeros enteros
+                Pattern p = Pattern.compile("-?\\d+");
+                Matcher m = p.matcher(message);
+
+                Integer r = null;
+                Integer c = null;
+
+                if (m.find()) r = Integer.valueOf(m.group()); // Primer numero encontrado
+                if (m.find()) c = Integer.valueOf(m.group()); // Segundo numero encontrado
+
+                if (r != null && c != null) {
+                    return new Pair<>(r, c);
+                }
+            } catch (Exception e) {
+                System.err.println("Error parseando coordenadas de [SANTA]: " + e.getMessage());
+            }
+            return null;
+        }
+        
+        private Pair<Integer, Integer> pedirCoordenadasSanta() {
+            System.out.println("=== Preguntando coordenadas a Santa ===");
+            
+            // Le enviamos el mensaje al ElfoTraductor
+            ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msg.setContent("Bro coordenadas en plan");
+            msg.addUserDefinedParameter("SECRET_CODE", "101010"); // HAY QUE CAMBIARLO A LA VARIABLE secret_code (cuando hagamos el merge)
+            
+            myAgent.send(msg);
+            
+            ACLMessage reply = myAgent.blockingReceive();
+            
+            if (reply != null) {
+                String content = reply.getContent();
+                System.out.println("=== Respuesta de [SANTA] para las [COORDENADAS] recibida: " + content);
+
+                // 4. Parsear las coordenadas del mensaje "Bro (x,y) en plan"
+                // Buscamos cualquier secuencia de digitos
+                return extraerCoordenadas(content);
+            }   
+            return null; 
+        }
+        
+        private void confirmarLlegadaSanta() {
+            System.out.println("=== Confirmando llegada a [SANTA] ===");
+
+            // 1. Preparar mensaje
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msg.setContent("Bro llegado en plan");
+            msg.addUserDefinedParameter("SECRET_CODE", "101010");
+
+            // 2. Enviar
+            myAgent.send(msg);
+
+            // 3. Espera bloqueante de confirmacion 
+            ACLMessage reply = myAgent.blockingReceive();
+
+            if (reply != null) {
+                System.out.println("=== [SANTA] confirma recepcion: " + reply.getContent());
+            }
         }
         
         @Override
