@@ -494,17 +494,10 @@ public class Controller {
                     
                     // Check if Santa is reached P3
                     if (!model.isSantaReached()) {
-                        // Todo este codigo hay que quitarlo no sirve
-                        //int renosEncontrados = model.getGoalsReached();
-                        //int totalRenos = model.getTotalGoals();
 
-                        //view. addLogEntry("¡Reno " + renosEncontrados + "/" + totalRenos + " encontrado!");
-
-                        // Cambiar al siguiente reno
-                        // model.moveToNextGoal();
-                        
-                        // Como aun no se ha llegado a santa
-                        // Vaciamos el goal y ya
+                        // poner log aunque sea cuando se encuentre reno :(
+                        view.addLogEntry("¡Reno encontrado!");
+                        // Vaciar el goal para que el agente solicite el siguiente
                         model.setGoalPosition(-1, -1);
                         
                     } else { // For P2, santa is always reached
@@ -530,8 +523,6 @@ public class Controller {
         view.setAgentPosition(model.getAgentR(), model.getAgentC());
         view.setGoalReached(model.isGoalReached());
         view.setGoalPosition(model.getGoalR(), model.getGoalC());
-        
-        view.setReindeerProgress(model.getGoalsReached(), model.getTotalGoals());
     }
     
     private void initializeMapSelector() {
@@ -614,7 +605,6 @@ public class Controller {
         System.out.println("=== RESTART COMPLETO ===");
         System.out.println("  Agente en: (" + model.getAgentR() + ", " + model.getAgentC() + ")");
         System.out.println("  Goal en: (" + model.getGoalR() + ", " + model.getGoalC() + ")");
-        System.out.println("  Renos totales: " + model.getTotalGoals());
     }
     
     
@@ -714,9 +704,7 @@ public class Controller {
                 if (cfg instanceof MapConfigP3){// Simulamos a rudolph
                     MapConfigP3 p3cfg = (MapConfigP3) cfg;
 
-                    // No hace falta inicializar la cola
-                    // model.initializeGoals(p3cfg.coordRenos);
-                    
+                    // El agente obtiene los goals por comunicación con Rudolph
                     this.model.setSantaReachedFalse();
                     
                     try {

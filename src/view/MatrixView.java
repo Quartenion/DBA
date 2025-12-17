@@ -99,9 +99,6 @@ public class MatrixView extends JPanel {
 
         // 2. DIBUJAR GRID (REJILLA) -------------------------------------------
         drawGrid(g2d, rows, cols);
-        
-        // 3. DIBUJAR RENOS PENDIENTES -------------------------------------------
-        drawPendingGoals(g2d);
 
         // 3. DIBUJAR ELEMENTOS DINÁMICOS (Agente y Objetivo) ------------------
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); //Mas nitido
@@ -182,40 +179,6 @@ public class MatrixView extends JPanel {
         
         g2d.fillOval(agentPixelX, agentPixelY, (int)agentSize, (int)agentSize);
     }
-    
-    /**
-    * Dibuja los renos pendientes de recoger (objectives en la cola)
-    */
-   private void drawPendingGoals(Graphics2D g2d) {
-       java.util.List<controller.Pair<Integer, Integer>> pending = model.getPendingGoals();
-
-       if (pending == null || pending.isEmpty()) {
-           return;
-       }
-
-       g2d.setColor(new Color(139, 69, 19)); // Marrón (reno)
-       for (controller.Pair<Integer, Integer> coord : pending) {
-           int row = coord.first;
-           int col = coord. second;
-
-           int pixelX = col * cellSize;
-           int pixelY = row * cellSize;
-
-           // Dibujar rectángulo marrón
-           g2d. fillRect(pixelX + 2, pixelY + 2, cellSize - 4, cellSize - 4);
-
-           // Dibujar emoji 🦌 si el tamaño lo permite
-           if (cellSize > 20) {
-               g2d.setColor(Color.WHITE);
-               g2d.setFont(new Font("SansSerif", Font.BOLD, (int)(cellSize * 0.6)));
-               FontMetrics fm = g2d.getFontMetrics();
-               String emoji = "🦌";
-               int textX = pixelX + (cellSize - fm.stringWidth(emoji)) / 2;
-               int textY = pixelY + (cellSize - fm.getHeight()) / 2 + fm.getAscent();
-               g2d.drawString(emoji, textX, textY);
-           }
-       }
-   }
     
     // -------------------------------------------------------------------------
     // GETTERS Y SETTERS 
