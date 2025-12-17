@@ -66,7 +66,7 @@ public class ElfTranslatorAgent extends Agent {
                         case "Hyvää" -> {
                             // Verifica estructura: "Hyvää jolua ... Nähdään pian"
                             // (Asegúrate de ajustar los índices según tu lógica exacta)
-                            if (parts.length >= 4 && "jolua".equals(parts[1])
+                            if (parts.length >= 4 && "joulua".equals(parts[1])
                                 && "Nähdään".equals(parts[parts.length-2])
                                 && "pian".equals(parts[parts.length - 1])) {
                                 
