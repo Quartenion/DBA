@@ -369,7 +369,6 @@ public class AgentP3 extends Agent {
             
             if (reply != null) {
                 // Le enviamos el mensaje al ElfoTraductor
-                msgElf.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
                 msgElf.setContent(reply.getContent());
 
                 myAgent.send(msgElf);
