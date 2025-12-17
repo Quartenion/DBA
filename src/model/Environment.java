@@ -7,10 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Queue;
 import controller.Pair;
-import java.util.List;
 
 
  // Representa el entorno y el estado interno del agente
@@ -45,11 +42,6 @@ public class Environment {
     // Para manejar listeners
     private PropertyChangeSupport support = null;
     
-    // Objetivos
-    private Queue<Pair<Integer, Integer>> goalQueue;
-    private int totalGoals = 0;
-    private int goalsReached = 0;
-    
     
     /**
      * Variable que va a indicar el fin del juego verdadero
@@ -63,8 +55,6 @@ public class Environment {
         this.seenCells = new HashSet<>();
         this.visitCountMap = new HashMap<>();
         this.world = w;
-        
-        this.goalQueue = new LinkedList<>();
         
         this.support = new PropertyChangeSupport(this);
     }
@@ -158,11 +148,6 @@ public class Environment {
        visitedCells.clear();
        seenCells.clear();
        visitCountMap.clear();
-       
-       // Añadido temporalmente porq la implementación de cola lo requiere
-       this.goalQueue.clear();
-       this.goalsReached = 0;
-       this.totalGoals = 0;
     }
     
     
@@ -251,60 +236,6 @@ public class Environment {
     public void setMapChanged(boolean mapChanged) {
         this.mapChanged = mapChanged;
     }
-    
-    // -------------------------------------------------------------------------
-    // GOALS - DBA3
-    // -------------------------------------------------------------------------
-    
-    public synchronized int getGoalsReached() { return goalsReached; }
-    public synchronized int getTotalGoals() { return totalGoals; }
-    
-    /**
-     * 
-     * 
-    * Inicializa la cola de objetivos con las coordenadas de los renos
-    * @param reindeerCoords Lista de coordenadas (row, col)
-    */
-    public synchronized void initializeGoals(ArrayList<Pair<Integer, Integer>> reindeerCoords) {goalQueue.clear();
-        goalsReached = 0;
-
-        System.out.println("=== initializeGoals() llamado ===");
-        System.out.println("Coordenadas recibidas: " + reindeerCoords.size());
-
-        for (Pair<Integer, Integer> coord : reindeerCoords) {
-            goalQueue.offer(coord);
-            System.out.println("  Añadido a cola: (" + coord.first + ", " + coord.second + ")");
-        }
-
-        totalGoals = goalQueue.size();
-        System.out.println("Total goals en cola: " + totalGoals);
-
-        if (! goalQueue.isEmpty()) {
-            Pair<Integer, Integer> firstGoal = goalQueue.peek();
-            setGoalPosition(firstGoal. first, firstGoal.second);
-            System.out.println("=== Primer goal establecido:  (" + goalR + ", " + goalC + ") ===");
-        } else {
-            System.err.println("ERROR: La cola está vacía después de inicializar");
-        }
-    }
-
-    /**
-     * Marca el goal actual como alcanzado y carga el siguiente
-     * @return true si había más goals, false si era el último
-     */
-    public synchronized boolean moveToNextGoal() {
-        if (!goalQueue.isEmpty()) {
-            goalQueue.poll(); // poll() == peek(), pero si lo elimina
-            goalsReached++;
-
-            if (!goalQueue.isEmpty()) {
-                Pair<Integer, Integer> nextGoal = goalQueue.peek();
-                setGoalPosition(nextGoal.first, nextGoal.second);
-                return true;
-            }
-        }
-        return false; // No hay más goals
-    }
 
     /**
      * @return true cuando se llega al goal que es santa
@@ -330,12 +261,5 @@ public class Environment {
 
     public synchronized void setSantaConfirmedReached(boolean santaConfirmedReached) {
         this.santaConfirmedReached = santaConfirmedReached;
-    }
-
-    /**
-     * @return Lista de goals pendientes (para visualización)
-     */
-    public synchronized List<Pair<Integer, Integer>> getPendingGoals() {
-        return new ArrayList<>(goalQueue);
     }
 }
