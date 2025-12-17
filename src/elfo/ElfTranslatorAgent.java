@@ -55,7 +55,6 @@ public class ElfTranslatorAgent extends Agent {
                                 // Lógica Regex recuperada
                                 replyContent = content.replaceFirst("^\\S+", "Rakas Joulupukki");
                                 replyContent = replyContent.replaceAll("\\S+\\s+\\S+$", "Kiitos"); 
-                                // OJO: He ajustado el regex final porque "en plan" son dos palabras, no una.
                                 
                                 translateReply.setContent(replyContent);
                             } else {

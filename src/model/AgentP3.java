@@ -214,11 +214,6 @@ public class AgentP3 extends Agent {
     }
     
     
-    
-    
-    
-    
-    
     /**
      * COPIA DE reactiveAgentBehaviour
      */
@@ -394,16 +389,17 @@ public class AgentP3 extends Agent {
             System.out.println("=== Confirmando llegada a [SANTA] ===");
 
             // 1. Preparar mensaje
-            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-            msg.addReceiver(new AID("Santa", AID.ISLOCALNAME));
+            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
             msg.setContent("Bro llegado en plan");
 
             // 2. Enviar
             myAgent.send(msg);
-
+            System.out.println("MENSAJE A TRADUCIR: " + msg.getContent());
             // 3. Espera bloqueante de confirmacion 
             ACLMessage translation = myAgent.blockingReceive();
-
+            System.out.println("MENSAJE TRADUCIDO: " + translation.getContent());
+            
             if (translation != null) {
                 // 1. Informar a santa
                 ACLMessage msgSanta = new ACLMessage(ACLMessage.INFORM);

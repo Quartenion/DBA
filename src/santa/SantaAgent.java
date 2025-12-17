@@ -10,6 +10,7 @@ import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.concurrent.ThreadLocalRandom;
@@ -149,6 +150,8 @@ public class SantaAgent extends Agent {
         if (parts.length < 3) {
             throw new FIPAException("Mensaje demasiado corto");
         }
+        
+        System.out.println("\n(" + parts[0] + "," + parts[1] + "," + parts[2] + ")\n`rs");
         
         // Validacion estricta del protocolo
         if (!PREFIX_IN.equals(parts[0])) throw new FIPAException("No empieza por " + PREFIX_IN);
