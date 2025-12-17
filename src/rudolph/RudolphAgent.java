@@ -7,6 +7,7 @@ import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -103,8 +104,7 @@ public class RudolphAgent extends Agent {
                     System.err.println("\n=== Error conocido: " + e.getMessage() + " ===\n");
                     response.setPerformative(ACLMessage.REFUSE);
                     response.setContent("Error conocido: " + e.getMessage());
-
-                } catch (Exception e) {
+                } catch (IOException | NumberFormatException e) {
                     // Manejo de errores técnicos
                     System.err.println("\n=== Error desconocido: " + e.getMessage() + " ===\n");
                     response.setPerformative(ACLMessage.NOT_UNDERSTOOD);

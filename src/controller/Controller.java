@@ -195,7 +195,7 @@ public class Controller {
                 // Quitamos la cabecera de los renos
                 readNextTextLine(br); 
 
-                // Leemos las coordenadas de los renos renos
+                // Leemos las coordenadas de los renos
                 ArrayList<Pair<Integer, Integer>> renosTemp = new ArrayList<>();
                 while ((line = br.readLine()) != null && !line.trim().isEmpty()) {
                     // Sacamos la línea

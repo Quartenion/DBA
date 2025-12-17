@@ -1,6 +1,7 @@
 //
 package model;
 
+import controller.Pair;
 import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -12,8 +13,11 @@ import java.util.Map;
 
 
 import jade.domain.FIPAException;
+import jade.lang.acl.UnreadableException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // Agente Reactivo P2.
 // Implementa un algoritmo de navegacion tipo Bug Algorithm
@@ -42,6 +46,8 @@ public class AgentP3 extends Agent {
     private final int ACTION_TIME = 50; // Tiempo entre ticks
     private String lastMove = null;      // Guarda la ultima accion efectiva ("UP", "DOWN", etc...)
                                          // Sirve para evitar que se realice una accion completamente opuesta
+    // Codigo secreto que inicia como 0 y toma el valor que le de santa
+    private int secret_code = 0;
     
     // Usamos IDs únicos de comunicación para cada uno de los agentes ya
     // que solo tendrá una vía abierta al mismo tiempo con cada uno de ellos
@@ -49,8 +55,6 @@ public class AgentP3 extends Agent {
     private final String SANTA_MSG_ID  = "santa_";
     private final String RUDOLPH_REINDEER_ID = "reindeer_";
     
-    // Inicia como 0 y toma valor cuando se lo da santa
-    private int secret_code = 0;
     
     
     // Configuración de sensores: 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
@@ -159,7 +163,9 @@ public class AgentP3 extends Agent {
                 msg_propose_to_santa.setContent(response_translate.getContent());
                 myAgent.send(msg_propose_to_santa);
                 System.out.println("Enviado PROPOSE de cosigo secreto\n");
+                
                 ACLMessage response_propose_to_santa = myAgent.blockingReceive();
+                
                 System.out.println("Recibido RESPONSE de SANTA\n");
                 
                 if(response_propose_to_santa.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
@@ -239,18 +245,150 @@ public class AgentP3 extends Agent {
         public reactiveAgentBehaviourP3(Agent a, long period){
             super(a, period);
         }
+
+        // FUNCIONES  DE COMUNICACION
+        
+        // FUNCIONES RUDOLPH
+        /**
+         * @brief Makes the necessary communication with Rudolph to get
+         *        reindeers.
+         * 
+         * @returns A pair with the row and col of the next reindeer, in case
+         *          there is no more reindeers, it returns (-1, -1)
+         */
+        private Pair<Integer, Integer> getNextReindeer() {
+           
+            // Preparamos el mensaje de conversación para Rudolph
+            ACLMessage requestReindeer = new ACLMessage(ACLMessage.QUERY_REF);
+            requestReindeer.addReceiver(new AID("Rudolph", AID.ISLOCALNAME)); 
+            requestReindeer.setConversationId(RUDOLPH_REINDEER_ID);
+            
+            // Importante añadir cabecera el codigo
+            requestReindeer.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code));
+            
+            // Content es indiferente
+            requestReindeer.setContent("No tengo goal, dame el proximo reno");
+            
+            System.out.println("\nAgentP3 manda a Rudolph mensaje de peticion de reno\n");
+            
+            // Mandamos mensaje
+            myAgent.send(requestReindeer);
+            
+            // Esperamos por la respuesta de Rudolph 
+            ACLMessage responseReindeer = myAgent.blockingReceive();
+            
+            System.out.println("\nAgentP3 recibe respuesta, en teoría por Rudolph\n");
+            
+            try {
+                // Administración de errores
+                if (!responseReindeer.getConversationId().equals(RUDOLPH_REINDEER_ID)){
+                    throw new FIPAException("Por alguna razón el AgentP3 recibe"
+                            + " un mensaje de otro ID cuando espera un reno respuesta " 
+                            + responseReindeer.getContent());
+                }
+
+                if (responseReindeer.getPerformative() != ACLMessage.INFORM_REF 
+                    || responseReindeer.getPerformative() != ACLMessage.INFORM){
+                    throw new FIPAException("Agente P3 no ha recibido INFORM o INFORM_REF, probablemente"
+                            + " haya recibido un refuse por error en el formato del mensaje: " 
+                            + responseReindeer.getContent());
+                }
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(1000);
+            }
+            catch (FIPAException e){
+                System.err.println("Error en la ejecución: " + e.getMessage());
+                model.changeState(State.END_WORLD); // Terminamos la ejecución
+            } catch (InterruptedException ex) {
+                Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
+                model.changeState(State.END_WORLD); // Terminamos la ejecución
+            }
+            
+            // En este punto deberíamos de tener la respuesta validada, por lo que 
+            // falta recoger el nuevo Pair
+            
+            Pair<Integer,Integer> coord = new Pair<>(-1,-1);
+            
+            // En caso de que sea INFORM_REF significa que hay más renos
+            if (responseReindeer.getPerformative() == ACLMessage.INFORM_REF){
+                try {
+                    coord = (Pair<Integer,Integer>) responseReindeer.getContentObject();
+                } catch (UnreadableException ex) {
+                    Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
+                    System.err.println("\nNo se ha podido leer bien el objeto coordenada del reno\n");
+                }
+            }
+            
+            return coord;
+        }
         
         
-        // FUNCIONES DE COMUNICACION
+        // FUNCIONES SANTA (Quiero terminar)
+        private Pair<Integer, Integer> extraerCoordenadas(String message) { // ESTA FUNCION SIRVE TAMBIEN PARA LOS RENOS
+            try {
+                // Regex para buscar numeros enteros
+                Pattern p = Pattern.compile("-?\\d+");
+                Matcher m = p.matcher(message);
+
+                Integer r = null;
+                Integer c = null;
+
+                if (m.find()) r = Integer.valueOf(m.group()); // Primer numero encontrado
+                if (m.find()) c = Integer.valueOf(m.group()); // Segundo numero encontrado
+
+                if (r != null && c != null) {
+                    return new Pair<>(r, c);
+                }
+            } catch (Exception e) {
+                System.err.println("Error parseando coordenadas de [SANTA]: " + e.getMessage());
+            }
+            return null;
+        }
         
-        // FUNCION RUDOLPH
+        private Pair<Integer, Integer> pedirCoordenadasSanta() {
+            System.out.println("=== Preguntando coordenadas a Santa ===");
+            
+            // Le enviamos el mensaje al ElfoTraductor
+            ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msg.setContent("Bro coordenadas en plan");
+            msg.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code)); 
+            
+            myAgent.send(msg);
+            
+            ACLMessage reply = myAgent.blockingReceive();
+            
+            if (reply != null) {
+                String content = reply.getContent();
+                System.out.println("=== Respuesta de [SANTA] para las [COORDENADAS] recibida: " + content);
+
+                // 4. Parsear las coordenadas del mensaje "Bro (x,y) en plan"
+                // Buscamos cualquier secuencia de digitos
+                return extraerCoordenadas(content);
+            }   
+            return null; 
+        }
         
-        
-        
-        
-        
-        // FUNCION SANTA (Quiero terminar)
-        
+        private void confirmarLlegadaSanta() {
+            System.out.println("=== Confirmando llegada a [SANTA] ===");
+
+            // 1. Preparar mensaje
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msg.setContent("Bro llegado en plan");
+            msg.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code));
+
+            // 2. Enviar
+            myAgent.send(msg);
+
+            // 3. Espera bloqueante de confirmacion 
+            ACLMessage reply = myAgent.blockingReceive();
+
+            if (reply != null) {
+                System.out.println("=== [SANTA] confirma recepcion: " + reply.getContent());
+            }
+        }
         
         
         @Override
