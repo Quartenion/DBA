@@ -11,10 +11,10 @@ Coordenadas renos:
 * 90,4
 
 Coordenadas Santa:
-* 0,0
+* 10,20
 
 Coordenadas iniciales agente:
-* 99,99
+* 80,80
 
 100x100-conObstaculos.txt
 

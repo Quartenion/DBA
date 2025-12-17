@@ -700,6 +700,10 @@ public class Controller {
                     // Inicializar la cola de objetivos en el Environment
                     model.initializeGoals(p3cfg.coordRenos);
                     
+                    // Guardar posiciones para visualización
+                    model.setReindeerPositions(p3cfg.coordRenos);
+                    model.setSantaPosition(p3cfg.coordSanta);
+                    
                     this.model.itsP3setSantaIn();
                     
                     try {

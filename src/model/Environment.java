@@ -50,6 +50,10 @@ public class Environment {
     private int totalGoals = 0;
     private int goalsReached = 0;
     
+    // Posiciones para visualización (P3)
+    private ArrayList<Pair<Integer, Integer>> reindeerPositions = null;
+    private Pair<Integer, Integer> santaPosition = null;
+    
     
     /**
      * Variable que va a indicar el fin del juego verdadero
@@ -328,5 +332,25 @@ public class Environment {
      */
     public synchronized List<Pair<Integer, Integer>> getPendingGoals() {
         return new ArrayList<>(goalQueue);
+    }
+    
+    // -------------------------------------------------------------------------
+    // POSICIONES DE RENOS Y SANTA (PARA VISUALIZACIÓN)
+    // -------------------------------------------------------------------------
+    
+    public synchronized void setReindeerPositions(ArrayList<Pair<Integer, Integer>> positions) {
+        this.reindeerPositions = positions;
+    }
+    
+    public synchronized ArrayList<Pair<Integer, Integer>> getReindeerPositions() {
+        return reindeerPositions;
+    }
+    
+    public synchronized void setSantaPosition(Pair<Integer, Integer> position) {
+        this.santaPosition = position;
+    }
+    
+    public synchronized Pair<Integer, Integer> getSantaPosition() {
+        return santaPosition;
     }
 }
