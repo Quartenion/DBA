@@ -116,6 +116,15 @@ public class MainView extends JFrame {
     // TOGGLES
     public void toggleShowMemory(){ this.matrixPanel.toggleShowMemory(); }
     public void toggleShowVisited(){ this.matrixPanel.toggleShowVisited(); }
+    
+    // VISUALIZACIÓN P3 (renos y Santa)
+    public void setReindeerPositions(java.util.ArrayList<controller.Pair<Integer, Integer>> positions) {
+        this.matrixPanel.setReindeerPositions(positions);
+    }
+    
+    public void setSantaPosition(controller.Pair<Integer, Integer> position) {
+        this.matrixPanel.setSantaPosition(position);
+    }
 
     // -------------------------------------------------------------------------
     //  PANEL DE INFORMACIÓN (InfoPanel)
