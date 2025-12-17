@@ -123,6 +123,7 @@ public class MainView extends JFrame {
     
     // SETTERS Y FUNCIONES PARA ACTUALIZAR EL PANEL
     public void addLogEntry(String log) { this.infoPanel.addLogEntry(log); }
+    public void clearLogEntry(){this.infoPanel.clearLogEntry();}
     public void setGoalReached(boolean reached) { this.infoPanel.setGoalReached(reached); }
     public void setActionsCount(int energy) { this.infoPanel.setActionsCount(energy); }
     public void setAgentPosition(int x, int y) { this.infoPanel.setAgentPosition(x, y); }

@@ -195,6 +195,10 @@ public class InfoPanelView extends JPanel {
         logList.ensureIndexIsVisible(0);
     }
     
+    public void clearLogEntry() {
+        logModel.clear();
+    }
+    
     public void setMapList(String[] maps) {
         mapSelector.removeAllItems();
         for (String m : maps) {
