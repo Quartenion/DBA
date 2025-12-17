@@ -59,7 +59,7 @@ public class RudolphAgent extends Agent {
             // Verificamos que hay mensaje
             if (request != null){
                 
-                System.out.println("=== Rudolph recibe mensaje REQUEST: (" 
+                System.out.println("=== Rudolph recibe mensaje: (" 
                                                + request.getContent() + ") ===");
                 // Creamos una reply vacia al mensaje
                 ACLMessage response = request.createReply();
