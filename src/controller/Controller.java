@@ -693,12 +693,14 @@ public class Controller {
                 catch (InterruptedException ex) {
                     Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                
+                
                 // Verificamos si es un mapa de P3, le pasamos los argumentos indicados
                 if (cfg instanceof MapConfigP3){// Simulamos a rudolph
                     MapConfigP3 p3cfg = (MapConfigP3) cfg;
 
-                    // Inicializar la cola de objetivos en el Environment
-                    model.initializeGoals(p3cfg.coordRenos);
+                    // No hace falta inicializar la cola
+                    // model.initializeGoals(p3cfg.coordRenos);
                     
                     this.model.itsP3setSantaIn();
                     
@@ -731,19 +733,16 @@ public class Controller {
                     } catch (StaleProxyException ex) {
                         Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    
-                    // Only setGoalPositionHere, initializeGoals does the job
-                    this.model.setGoalPosition(goalR, goalC);
                 }
                 
             } else {
                 System.out.println("Configuracion no encontrada para " + fileName + ". Usando defaults.");
-                // Aqui ponemos la goal position default también
-                this.model.setGoalPosition(goalR, goalC);
             }
 
             // Aplicamos las posiciones al entorno logico del Agente
+            // Para P3 el goal empieza en -1 -1
             this.model.setAgentPosition(startR, startC);
+            this.model.setGoalPosition(goalR, goalC);
             
             
             
