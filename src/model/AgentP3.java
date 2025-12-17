@@ -350,23 +350,39 @@ public class AgentP3 extends Agent {
             System.out.println("=== Preguntando coordenadas a Santa ===");
             
             // Le enviamos el mensaje al ElfoTraductor
-            ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
-            msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
-            msg.setContent("Bro coordenadas en plan");
-            msg.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code)); 
+            ACLMessage msgElf = new ACLMessage(ACLMessage.REQUEST);
+            msgElf.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+            msgElf.setContent("Bro coordenadas en plan");
             
-            myAgent.send(msg);
+            myAgent.send(msgElf);
+            
+            ACLMessage translation = myAgent.blockingReceive();
+            
+            // Le enviamos el mensaje al Santa
+            ACLMessage msgSanta = new ACLMessage(ACLMessage.QUERY_REF);
+            msgSanta.addReceiver(new AID("Santa", AID.ISLOCALNAME));
+            msgSanta.setContent(translation.getContent());
+            msgSanta.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code)); 
+            
+            myAgent.send(msgSanta);
             
             ACLMessage reply = myAgent.blockingReceive();
             
             if (reply != null) {
-                String content = reply.getContent();
-                System.out.println("=== Respuesta de [SANTA] para las [COORDENADAS] recibida: " + content);
+                // Le enviamos el mensaje al ElfoTraductor
+                msgElf.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
+                msgElf.setContent(reply.getContent());
 
+                myAgent.send(msgElf);
+
+                ACLMessage translated = myAgent.blockingReceive();
+     
+                System.out.println("=== Respuesta de [SANTA] para las [COORDENADAS] recibida: " + translated.getContent());
                 // 4. Parsear las coordenadas del mensaje "Bro (x,y) en plan"
                 // Buscamos cualquier secuencia de digitos
-                return extraerCoordenadas(content);
+                return extraerCoordenadas(translated.getContent());
             }   
+            
             return null; 
         }
         
