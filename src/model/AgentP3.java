@@ -353,7 +353,7 @@ public class AgentP3 extends Agent {
          * @returns A pair with the row and col of the next reindeer, in case
          *          there is no more reindeers, it returns (-1, -1)
          */
-        private Pair<Integer, Integer> getNextReindeer() {
+        private Pair<Integer, Integer> getNextReindeer() throws InterruptedException {
            
             // Preparamos el mensaje de conversación para Rudolph
             ACLMessage requestReindeer = new ACLMessage(ACLMessage.QUERY_REF);
@@ -367,12 +367,28 @@ public class AgentP3 extends Agent {
             requestReindeer.setContent("No tengo goal, dame el proximo reno");
             
             System.out.println("\nAgentP3 manda a Rudolph mensaje de peticion de reno\n");
+
+            logger.addLogEntry("""
+                               #SEND - "%s"# AgentP3 envia mensaje a "Rudolph" 
+                               para obtener un nuevo reno: "%s"
+                               """.formatted(
+                  ACLMessage.getPerformative(requestReindeer.getPerformative()),
+                                             requestReindeer.getContent()));
+                
+            try {
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
             
             // Mandamos mensaje
             myAgent.send(requestReindeer);
             
             // Esperamos por la respuesta de Rudolph 
             ACLMessage responseReindeer = myAgent.blockingReceive();
+            
+
             
             System.out.println("\nAgentP3 recibe respuesta, en teoría por Rudolph\n");
             
@@ -391,31 +407,50 @@ public class AgentP3 extends Agent {
                             + responseReindeer.getContent());
                 }
                 
-                // DEBUG SIMULATOR
-                Thread.sleep(1000);
-            }
-            catch (FIPAException e){
+            }catch (FIPAException e){
                 System.err.println("Error en la ejecución: " + e.getMessage());
                 model.changeState(State.END_WORLD); // Terminamos la ejecución
-            } catch (InterruptedException ex) {
-                Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
-                model.changeState(State.END_WORLD); // Terminamos la ejecución
             }
+            // Terminamos la ejecución
             
             // En este punto deberíamos de tener la respuesta validada, por lo que 
             // falta recoger el nuevo Pair
             
             Pair<Integer,Integer> coord = new Pair<>(-1,-1);
             
+
+            
             // En caso de que sea INFORM_REF significa que hay más renos
             if (responseReindeer.getPerformative() == ACLMessage.INFORM_REF){
                 try {
                     coord = (Pair<Integer,Integer>) responseReindeer.getContentObject();
+                    
+                    logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(responseReindeer.getPerformative()),
+                                           responseReindeer.getSender().getLocalName(),
+                                                    coord.toString()));
+                    
                 } catch (UnreadableException ex) {
                     Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
                     System.err.println("\nNo se ha podido leer bien el objeto coordenada del reno\n");
                 }
             }
+            else {
+                
+                logger.addLogEntry("""
+                               #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                               el mensaje: "%s"
+                               """.formatted(
+               ACLMessage.getPerformative(responseReindeer.getPerformative()),
+                                       responseReindeer.getSender().getLocalName(),
+                                                responseReindeer.getContent()));
+            
+            }
+            
+            Thread.sleep(2000);
             
             return coord;
         }
@@ -453,9 +488,34 @@ public class AgentP3 extends Agent {
             
             System.out.println("=== Se intenta traducir" + msgElf.getContent());
             
+            
+            logger.addLogEntry("""
+                               #SEND - "%s"# AgentP3 envia mensaje a "ElfTranslator" 
+                               para traducir: "%s"
+                               """.formatted(
+                  ACLMessage.getPerformative(msgElf.getPerformative()),
+                                             msgElf.getContent()));
+                
+            try {
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+            
             myAgent.send(msgElf);
             
             ACLMessage translation = myAgent.blockingReceive();
+            
+            
+            logger.addLogEntry("""
+                               #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                               el mensaje: "%s"
+                               """.formatted(
+               ACLMessage.getPerformative(translation.getPerformative()),
+                                       translation.getSender().getLocalName(),
+                                                translation.getContent()));
+            
             
             System.out.println("=== RESULTADO DE TRADUCCION" + translation.getContent());
             
@@ -465,18 +525,78 @@ public class AgentP3 extends Agent {
             msgSanta.setContent(translation.getContent());
             msgSanta.addUserDefinedParameter("SECRET_CODE", Integer.toString(secret_code)); 
             
+            try {
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+            
+            
+            logger.addLogEntry("""
+                               #SEND - "%s"# AgentP3 envia mensaje a "Santa" 
+                               para obtener sus coordenadas: "%s"
+                               """.formatted(
+                  ACLMessage.getPerformative(msgSanta.getPerformative()),
+                                             msgSanta.getContent()));
+                
+            try {
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+            
             myAgent.send(msgSanta);
             
             ACLMessage reply = myAgent.blockingReceive();
             
             if (reply != null) {
+
+                logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(reply.getPerformative()),
+                                           reply.getSender().getLocalName(),
+                                                    reply.getContent()));
+            
                 // Le enviamos el mensaje al ElfoTraductor
                 msgElf.setContent(reply.getContent());
+                
+                try {
+                    // DEBUG SIMULATOR
+                    Thread.sleep(3000);
+                } catch (InterruptedException ex) {
+                    System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
 
+                logger.addLogEntry("""
+                                   #SEND - "%s"# AgentP3 envia mensaje a "ElfTranslator" 
+                                   para traducir: "%s"
+                                   """.formatted(
+                      ACLMessage.getPerformative(msgElf.getPerformative()),
+                                                 msgElf.getContent()));
                 myAgent.send(msgElf);
 
                 ACLMessage translated = myAgent.blockingReceive();
      
+                
+                logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(translated.getPerformative()),
+                                           translated.getSender().getLocalName(),
+                                                    translated.getContent()));
+                
+                try {
+                    // DEBUG SIMULATOR
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
+                
                 System.out.println("=== Respuesta de [SANTA] para las [COORDENADAS] recibida: " + translated.getContent());
                 // 4. Parsear las coordenadas del mensaje "Bro (x,y) en plan"
                 // Buscamos cualquier secuencia de digitos
@@ -494,23 +614,72 @@ public class AgentP3 extends Agent {
             msg.addReceiver(new AID("ElfTranslator", AID.ISLOCALNAME));
             msg.setContent("Bro llegado en plan");
 
+            logger.addLogEntry("""
+                               #SEND - "%s"# AgentP3 envia mensaje a "ElfTranslator" 
+                               para traducir: "%s"
+                               """.formatted(
+                  ACLMessage.getPerformative(msg.getPerformative()),
+                                             msg.getContent()));
+            
+            try {
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
             // 2. Enviar
             myAgent.send(msg);
-            System.out.println("MENSAJE A TRADUCIR: " + msg.getContent());
             // 3. Espera bloqueante de confirmacion 
             ACLMessage translation = myAgent.blockingReceive();
-            System.out.println("MENSAJE TRADUCIDO: " + translation.getContent());
             
             if (translation != null) {
+                logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(translation.getPerformative()),
+                                           translation.getSender().getLocalName(),
+                                                    translation.getContent()));
+
+                try {
+                    // DEBUG SIMULATOR
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }                
+                
                 // 1. Informar a santa
                 ACLMessage msgSanta = new ACLMessage(ACLMessage.INFORM);
                 msgSanta.addReceiver(new AID("Santa", AID.ISLOCALNAME));
                 msgSanta.setContent(translation.getContent());
-                
+
+
+                logger.addLogEntry("""
+                           #SEND - "%s"# AgentP3 envia mensaje a "Santa" 
+                           para confirmarle la llegada: "%s"
+                           """.formatted(
+              ACLMessage.getPerformative(msgSanta.getPerformative()),
+                                         msgSanta.getContent()));
+            
                 myAgent.send(msgSanta);
+                
+                try {
+                    // DEBUG SIMULATOR
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }      
                 
                 ACLMessage reply = myAgent.blockingReceive();
                 
+                logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(reply.getPerformative()),
+                                           reply.getSender().getLocalName(),
+                                                    reply.getContent()));
+
                 System.out.println("=== [SANTA] confirma recepcion: " + reply.getContent());
                 model.setSantaConfirmedReached(true);
             }
@@ -539,24 +708,28 @@ public class AgentP3 extends Agent {
 
                 // El caso de que no se haya llegado a santa aun
                 if (!model.isSantaReached()) {
-                    Pair<Integer,Integer> reindeerCoord = getNextReindeer();
-
-                    // Recibimos coordenada valida, hacemos set de goal
-                    if (reindeerCoord.first > 0 && reindeerCoord.second > 0){
-                        model.setGoalPosition(reindeerCoord.first, 
-                                                    reindeerCoord.second);
+                    try {
+                        Pair<Integer,Integer> reindeerCoord = getNextReindeer();
+                        
+                        // Recibimos coordenada valida, hacemos set de goal
+                        if (reindeerCoord.first > 0 && reindeerCoord.second > 0){
+                            model.setGoalPosition(reindeerCoord.first,
+                                    reindeerCoord.second);
+                        }
+                        else {
+                            // La coordenada no es valida, o es que no hay mas renos
+                            // No contemplamos que la coordenada sea invalida
+                            // Preguntamos a santa directamente
+                            Pair<Integer,Integer> santaCoord = pedirCoordenadasSanta();
+                            model.setGoalPosition(santaCoord.first,
+                                    santaCoord.second);
+                            // Colocamos esto a true y la proxima vez que llegue al goal
+                            // terminara la ejecucion
+                            model.setSantaReachedTrue();
+                        }
+                    } catch (InterruptedException ex) {
+                        System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                     }
-                    else {
-                        // La coordenada no es valida, o es que no hay mas renos
-                        // No contemplamos que la coordenada sea invalida
-                        // Preguntamos a santa directamente
-                        Pair<Integer,Integer> santaCoord = pedirCoordenadasSanta();
-                        model.setGoalPosition(santaCoord.first, 
-                                                    santaCoord.second);
-                        // Colocamos esto a true y la proxima vez que llegue al goal
-                        // terminara la ejecucion
-                        model.setSantaReachedTrue();
-                    }   
                 }
                 else {
                     // El caso de que ya se haya llegado a santa 
