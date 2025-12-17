@@ -2,6 +2,7 @@
 package model;
 
 import controller.Pair;
+import controller.ViewLogger;
 import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -56,6 +57,8 @@ public class AgentP3 extends Agent {
     private final String SANTA_MSG_ID  = "santa_";
     private final String RUDOLPH_REINDEER_ID = "reindeer_";
     
+    private ViewLogger logger;
+    
     
     
     // Configuración de sensores: 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
@@ -77,7 +80,8 @@ public class AgentP3 extends Agent {
         }
         
         // 2. Añadir comportamientos
-        if (args.length > 1) {
+        if (args.length > 2) {
+            this.logger = (ViewLogger) args[2];
             addBehaviour(new startSearchBehaviour());
             addBehaviour(new reactiveAgentBehaviourP3(this, ACTION_TIME));
         }
@@ -133,10 +137,41 @@ public class AgentP3 extends Agent {
             msg_translation.setConversationId(TRASLATION_ID);
             msg_translation.setContent("Bro propuesta a comenzar ejecución "
                                                + "de rescate de renos, en plan");
+            
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+            
+            // Log entry y System output van por lados distintos
+            logger.addLogEntry("""
+                               #SEND - "%s"# AgentP3 envia mensaje a "ElfTranslator" 
+                               para traducir: "%s"
+                               """.formatted(
+                  ACLMessage.getPerformative(msg_translation.getPerformative()),
+                                             msg_translation.getContent()));
+            
+                        
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+            
             myAgent.send(msg_translation);
             System.out.println("Enviado REQUEST de traducir\n");
             
             ACLMessage response_translate = myAgent.blockingReceive();
+
+            logger.addLogEntry("""
+                               #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                               el mensaje: "%s"
+                               """.formatted(
+               ACLMessage.getPerformative(response_translate.getPerformative()),
+                                       response_translate.getSender().getLocalName(),
+                                                response_translate.getContent()));
+            
             
             System.out.println("Recibido RESPONSE de traducir\n");
             
@@ -154,18 +189,42 @@ public class AgentP3 extends Agent {
                             + response_translate.getContent());
                 }
                 
+                                
                 // DEBUG SIMULATOR
-                Thread.sleep(1000);
+                Thread.sleep(3000);
                 
                 System.out.println("\n\nMensaje verificado por agente: " + response_translate.getContent() + " procedemos a enviarselo a SANTA");
                 ACLMessage msg_propose_to_santa = new ACLMessage(ACLMessage.PROPOSE);
                 msg_propose_to_santa.addReceiver(new AID("Santa", AID.ISLOCALNAME)); 
                 msg_propose_to_santa.setConversationId(SANTA_MSG_ID);
                 msg_propose_to_santa.setContent(response_translate.getContent());
+                
+                // Log entry y System output van por lados distintos
+                logger.addLogEntry("""
+                                   #SEND - "%s"# AgentP3 envia propuesta a "Santa" 
+                                   para buscar a los renos: "%s"
+                                   """.formatted(
+                      ACLMessage.getPerformative(msg_propose_to_santa.getPerformative()),
+                                                 msg_propose_to_santa.getContent()));
+                
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+                
                 myAgent.send(msg_propose_to_santa);
                 System.out.println("Enviado PROPOSE de cosigo secreto\n");
                 
                 ACLMessage response_propose_to_santa = myAgent.blockingReceive();
+                
+
+                logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(response_propose_to_santa.getPerformative()),
+                                           response_propose_to_santa.getSender().getLocalName(),
+                                                    response_propose_to_santa.getContent()));
+                
                 
                 System.out.println("Recibido RESPONSE de SANTA\n");
                 
@@ -177,9 +236,34 @@ public class AgentP3 extends Agent {
                 
                 // Ahora traducimos el mensaje de santa para obtener el codigo
                 msg_translation.setContent(response_propose_to_santa.getContent());
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+                
+
+                // Log entry y System output van por lados distintos
+                logger.addLogEntry("""
+                                   #SEND - "%s"# AgentP3 envia mensaje a "ElfTranslator" 
+                                   para traducir: "%s"
+                                   """.formatted(
+                      ACLMessage.getPerformative(msg_translation.getPerformative()),
+                                                 msg_translation.getContent()));
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+                
                 myAgent.send(msg_translation);
                 
                 response_translate = myAgent.blockingReceive();
+
+
+                logger.addLogEntry("""
+                                   #RECIEVE - "%s"# AgentP3 recibe de "%s" 
+                                   el mensaje: "%s"
+                                   """.formatted(
+                   ACLMessage.getPerformative(response_translate.getPerformative()),
+                                           response_translate.getSender().getLocalName(),
+                                                    response_translate.getContent()));
                 
                 // Administración de errores
                 if (!response_translate.getConversationId().equals(TRASLATION_ID)){
@@ -197,15 +281,33 @@ public class AgentP3 extends Agent {
                 // Si todo ha ido bien el codigo
                 String[] parts = response_translate.getContent().trim().split("\\s+");
                 
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+
                 System.out.println("\n\nEl codigo secreto (AGENTE) es: " + parts[1]);
                 
                 secret_code = Integer.parseInt(parts[1]);
                 
+                logger.addLogEntry("""
+                                   #LOG# AgentP3 tiene secret_code: %d
+                                   """.formatted(secret_code));
+
+                
                 // Ya tenemos el codigo somos felices, termina este comportamiento
                 // y puede empezar la ejecucion
                 
+                
+                // DEBUG SIMULATOR
+                Thread.sleep(3000);
+                
             } catch (FIPAException e){
                 System.err.println("Error en la ejecución: " + e.getMessage());
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    System.getLogger(AgentP3.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
                 model.changeState(State.END_WORLD); // Terminamos la ejecución
             } catch (InterruptedException ex) {
                 Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);

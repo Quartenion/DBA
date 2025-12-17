@@ -2,6 +2,7 @@ package rudolph;
 
 
 import controller.Pair;
+import controller.ViewLogger;
 import elfo.ElfTranslatorAgent;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -31,6 +32,7 @@ public class RudolphAgent extends Agent {
     private final int SECRET_CODE = 101010;
     private Queue<Pair<Integer,Integer>> coordRenos;
     
+    private ViewLogger logger;
     
     @Override
     public void setup(){
@@ -39,6 +41,10 @@ public class RudolphAgent extends Agent {
         Object[] args = getArguments();
         if (args != null && args.length > 0 && args[0] instanceof ArrayList) {
             this.coordRenos = new LinkedList<>((ArrayList) args[0]);
+        } 
+        
+        if (args != null && args.length > 1 && args[1] instanceof ViewLogger) {
+            this.logger = (ViewLogger) args[1];
         } 
         
         System.out.println("=== Agente " + getLocalName() + " iniciado. ===");

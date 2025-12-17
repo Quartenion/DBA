@@ -1,5 +1,6 @@
 import view.MainView;
 import controller.Controller;
+import controller.ViewLogger;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.wrapper.AgentController;
@@ -38,6 +39,14 @@ public class Launcher {
             Environment environment = new Environment(worldPerceptionInterface);
 
             
+            //------------------------------------------------------------------
+            // view (Se le pasa mundo, pero recibe un objeto de la interfaz)
+            MainView view = new MainView(world, environment);
+            
+            
+            // Creamos el view logger P3 
+            ViewLogger viewLogger = new ViewLogger(view);
+            
             // -----------------------------------------------------------------
             // LANZAMOS LOS AGENTES
             // -----------------------------------------------------------------
@@ -62,7 +71,7 @@ public class Launcher {
                 
                 AgentController acE = cc.createNewAgent("ElfTranslator", 
                                         ElfTranslatorAgent.class.getCanonicalName(), 
-                                        null);
+                                        new Object[]{viewLogger});
 
                 
                 AgentController acS = cc.createNewAgent("Santa", 
@@ -85,12 +94,11 @@ public class Launcher {
                         (String) null, ex);
             }
 
-            //------------------------------------------------------------------
-            // view (Se le pasa mundo, pero recibe un objeto de la interfaz)
-            MainView view = new MainView(world, environment);
             
             // controller
-            Controller controller = new Controller(view, world, environment, cc);
+            Controller controller = new Controller(view, world, environment, cc, 
+                                                                    viewLogger);
+            
             controller.restart("./maps/mapWithoutObstacle.txt");
             
 

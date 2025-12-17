@@ -36,7 +36,8 @@ import view.MainView;
 public class Controller {
     
     // - DEPENDENCIAS ----------------------------------------------------------
-    private MainView view;            
+    private MainView view;    
+    private ViewLogger logger;
     private World modelWorld;         
     private final String mapsDir = "./maps/"; 
     private final String configFilePath = "./maps/posiciones.txt";
@@ -91,11 +92,13 @@ public class Controller {
     // -------------------------------------------------------------------------
     // CONSTRUCTOR
     // -------------------------------------------------------------------------
-    public Controller(MainView view, World modelWorld, Environment model, ContainerController cc) {
+    public Controller(MainView view, World modelWorld, Environment model, ContainerController cc,
+                      ViewLogger logger) {
         this.view = view;
         this.model = model;
         this.modelWorld = modelWorld;
         this.cc = cc;
+        this.logger = logger;
         
         // 1. Cargar configuraciones desde el txt
         loadMapConfigurations();
@@ -634,6 +637,9 @@ public class Controller {
             // Enviamos la estructura fisica (paredes/huecos) al modelo del Mundo
             this.modelWorld.changeMap(newMap, rows, cols);
             
+            
+            this.logger.clearLogEntry();
+            
             // -----------------------------------------------------------------
             // 2. DETERMINAR POSICIONES DE INICIO Y META
             // -----------------------------------------------------------------
@@ -651,6 +657,7 @@ public class Controller {
                 startC = cfg.agentC; // Columna
                 goalR = cfg.goalR;   // Fila
                 goalC = cfg.goalC;   // Columna
+                
                 
                 
                 // Nos cargamos el agente y rudolph mediante bombardeada
@@ -704,15 +711,15 @@ public class Controller {
                         // Creamos los agentes de nuevo
                         AgentController acHW = cc.createNewAgent("AgentP3",
                                 AgentP3.class.getCanonicalName(),
-                                new Object[]{this.model, true});
+                                new Object[]{this.model, true, this.logger});
                         
                         AgentController acRU = cc.createNewAgent("Rudolph", 
                                 RudolphAgent.class.getCanonicalName(),
-                                new Object[]{p3cfg.coordRenos});
+                                new Object[]{p3cfg.coordRenos, this.logger});
                         
                         AgentController acSA = cc.createNewAgent("Santa", 
                                 SantaAgent.class.getCanonicalName(),
-                                new Object[]{p3cfg.coordSanta});
+                                new Object[]{p3cfg.coordSanta, this.logger});
 
                         // Iniciamos los agentes
                         acRU.start();
