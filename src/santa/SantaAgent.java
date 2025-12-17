@@ -6,6 +6,7 @@
 package santa;
 
 import controller.Pair;
+import controller.ViewLogger;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.FIPAException;
@@ -32,6 +33,8 @@ public class SantaAgent extends Agent {
 
     // Estado del agente
     private Pair<Integer, Integer> coordSanta;
+    
+    private ViewLogger logger;
 
     @Override
     protected void setup() {
@@ -41,6 +44,12 @@ public class SantaAgent extends Agent {
         } else {
             System.err.println("Santa: NO RECIBE SUS COORDENADAS");
         }
+        
+        if (args != null && args.length > 1 && args[1] instanceof ViewLogger) {
+            this.logger = (ViewLogger) args[1];
+        } 
+        
+        
         System.out.println("=== Agente Santa " + getLocalName() + " iniciado en " + coordSanta + " ===");
         addBehaviour(new SantaBehaviour());
     }

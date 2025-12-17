@@ -5,7 +5,7 @@ import view.MainView;
 public class ViewLogger {
     MainView view;
     
-    private ViewLogger(MainView view) {
+    public ViewLogger(MainView view) {
         this.view = view;
     }
     
@@ -14,7 +14,7 @@ public class ViewLogger {
     }
     
     //funcion synchronized: limpia el log
-    public synchronized void clearLogEntry(String log) {
+    public synchronized void clearLogEntry() {
         this.view.clearLogEntry();
     }
 }

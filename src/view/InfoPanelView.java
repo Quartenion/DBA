@@ -27,14 +27,13 @@ public class InfoPanelView extends JPanel {
     private JToggleButton runBtn;
 
     // Componentes de Log ------------------------------------------------------
-    private DefaultListModel<String> logModel;
-    private JList<String> logList;
+    private JTextArea logArea;
 
    
      // Constructor principal. Configura el layout y los estilos base
     public InfoPanelView() {
         setLayout(new GridBagLayout());
-        setPreferredSize(new Dimension(550, 600));
+        setPreferredSize(new Dimension(600, 600));
         setBackground(new Color(245, 245, 245));
         setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.GRAY), "Panel de Información"));
@@ -145,16 +144,24 @@ public class InfoPanelView extends JPanel {
         panel.setBorder(BorderFactory.createTitledBorder("Registro de Acciones"));
         panel.setBackground(new Color(255, 245, 245));
 
-        logModel = new DefaultListModel<>();
-        logList = new JList<>(logModel);
-        logList.setVisibleRowCount(5);
-        logList.setBackground(new Color(255, 250, 240));
-        logList.setFont(new Font("Arial", Font.PLAIN, 16));
-        logList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        // 1. CAMBIO: Usamos JTextArea en lugar de JList
+        logArea = new JTextArea();
 
-        JScrollPane scrollPane = new JScrollPane(logList);
+        // 2. CONFIGURACIÓN CLAVE para que el texto baje y no se corte
+        logArea.setLineWrap(true);        // Activa el ajuste de línea automático
+        logArea.setWrapStyleWord(true);   // Ajusta por palabras completas (no corta a mitad de palabra)
+        logArea.setEditable(false);       // Importante: que el usuario no pueda borrar el log
+
+        // 3. Estilos (Los mismos que tenías)
+        logArea.setBackground(new Color(255, 250, 240));
+        logArea.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        // Margen interno para que el texto no pegue con el borde
+        logArea.setMargin(new java.awt.Insets(5, 5, 5, 5)); 
+
+        JScrollPane scrollPane = new JScrollPane(logArea);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        
+
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
@@ -186,17 +193,16 @@ public class InfoPanelView extends JPanel {
     }
 
     // Añade una entrada al log, manteniendo un maximo de 20 registros
-    public void addLogEntry(String entry) {
-        logModel.add(0, entry); // Añadir al principio
-        if (logModel.size() > 30) {
-            logModel.remove(logModel.size() - 1); // Eliminar el mas antiguo
-        }
-        // Asegurar que se vea el ultimo elemento añadido (arriba)
-        logList.ensureIndexIsVisible(0);
+    public void addLogEntry(String mensaje) {
+        // insert pone el texto en la posición 0 (el principio)
+        logArea.insert(mensaje + "\n--------------------\n", 0);
+
+        // Mover el scroll al principio
+        logArea.setCaretPosition(0);
     }
     
     public void clearLogEntry() {
-        logModel.clear();
+        logArea.setText("");
     }
     
     public void setMapList(String[] maps) {

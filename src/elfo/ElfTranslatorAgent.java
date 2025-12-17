@@ -1,5 +1,6 @@
 package elfo;
 
+import controller.ViewLogger;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.FIPAException;
@@ -9,8 +10,20 @@ import java.util.logging.Logger;
 
 public class ElfTranslatorAgent extends Agent {
 
+    private ViewLogger logger;
+    private final boolean haveLog = false;
+    
     @Override
     protected void setup() {
+        
+        Object[] args = getArguments();
+        if (args != null && args.length > 0 && args[0] instanceof ViewLogger) {
+            this.logger = (ViewLogger) args[0];
+        } else {
+            throw new RuntimeException("Environment no proporcionado");
+        }
+        
+        
         System.out.println("===Agente Elfo " + getLocalName() + " iniciado.===");
         // Añadimos el comportamiento que has recuperado
         addBehaviour(new TranslatorBehaviour());
@@ -24,7 +37,20 @@ public class ElfTranslatorAgent extends Agent {
             // Esperar mensaje
             ACLMessage translateMSG = myAgent.blockingReceive();
             
+            
             if (translateMSG != null) {
+                // Hacemos el log de recieve
+                if (haveLog){
+                    logger.addLogEntry("""
+                                       #RECIEVE - "%s"# ElfTranslator recibe de "%s" 
+                                       el mensaje: "%s"
+                                       """.formatted(
+                       ACLMessage.getPerformative(translateMSG.getPerformative()),
+                                               translateMSG.getSender().getLocalName(),
+                                                        translateMSG.getContent()));
+                }
+                
+                // Creamos la respuesta
                 ACLMessage translateReply = translateMSG.createReply();
                 
                 try {
@@ -100,13 +126,33 @@ public class ElfTranslatorAgent extends Agent {
                     translateReply.setContent("Error interno: " + e.getMessage());
                 }
 
-                // DEBUG SIMULATOR
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(ElfTranslatorAgent.class.getName()).log(Level.SEVERE, null, ex);
+                if (haveLog) {
+                    // DEBUG SIMULATOR
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(ElfTranslatorAgent.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
+
+
+                    // Log entry y System output van por lados distintos
+                    logger.addLogEntry("""
+                                       #SEND - "%s"# ElfTranslator envia respuesta a %s
+                                       para traducir: "%s"
+                                       """.formatted(
+                          ACLMessage.getPerformative(translateReply.getPerformative()),
+                                                     translateMSG.getSender().getLocalName(),
+                                                     translateReply.getContent()));
+
+                    // DEBUG SIMULATOR
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(ElfTranslatorAgent.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
-               
+                
                 // Enviar respuesta
                 myAgent.send(translateReply);
             }
