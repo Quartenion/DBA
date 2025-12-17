@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
 public class AgentP3 extends Agent {
 
     private Environment model;
-    private final int ACTION_TIME = 50; // Tiempo entre ticks
+    private final int ACTION_TIME = 10; // Tiempo entre ticks
     private String lastMove = null;      // Guarda la ultima accion efectiva ("UP", "DOWN", etc...)
                                          // Sirve para evitar que se realice una accion completamente opuesta
     // Codigo secreto que inicia como 0 y toma el valor que le de santa
@@ -288,7 +288,7 @@ public class AgentP3 extends Agent {
                 }
 
                 if (responseReindeer.getPerformative() != ACLMessage.INFORM_REF 
-                    || responseReindeer.getPerformative() != ACLMessage.INFORM){
+                    && responseReindeer.getPerformative() != ACLMessage.INFORM){
                     throw new FIPAException("Agente P3 no ha recibido INFORM o INFORM_REF, probablemente"
                             + " haya recibido un refuse por error en el formato del mensaje: " 
                             + responseReindeer.getContent());

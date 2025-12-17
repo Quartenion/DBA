@@ -65,7 +65,7 @@ public class SantaAgent extends Agent {
                         case ACLMessage.PROPOSE -> {
                             System.out.println("=== Santa procesando PROPOSE ===");
                             // Logica de aceptacion aleatoria (80%)
-                            if (ThreadLocalRandom.current().nextInt(1, 101) < 80) {
+                            if (ThreadLocalRandom.current().nextInt(1, 101) < 100) {
                                 reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
                                 responsePayload = String.valueOf(SECRET_CODE);
                             } else {

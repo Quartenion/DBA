@@ -1,9 +1,13 @@
 package controller;
 
+import java.io.Serializable;
+
 /**
  * Pair class
+ * @param <T0>
+ * @param <T1>
  */
-public class Pair<T0, T1> {
+public class Pair<T0, T1> implements Serializable{
     public T0 first;
     public T1 second;
     
