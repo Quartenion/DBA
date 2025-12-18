@@ -55,7 +55,7 @@ public class AgentP3 extends Agent {
             addBehaviour(new startSearchBehaviour());
             addBehaviour(new reactiveAgentBehaviourP3(this, ACTION_TIME));
         }
-        else{
+        else {
             addBehaviour(new reactiveAgentBehaviour(this, ACTION_TIME));
         }
         
@@ -711,6 +711,8 @@ public class AgentP3 extends Agent {
             AgentP3.this.lastMove = null; 
         }        
     }
+    
+    
     
     
     //--------------------------------------------------------------------------

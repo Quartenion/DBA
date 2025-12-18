@@ -74,7 +74,7 @@ public class SantaAgent extends Agent {
                     switch (msg.getPerformative()) {
                         case ACLMessage.PROPOSE -> {
                             System.out.println("=== Santa procesando PROPOSE ===");
-                            if (ThreadLocalRandom.current().nextInt(1, 101) < 100) {
+                            if (ThreadLocalRandom.current().nextInt(1, 101) < 80) {
                                 reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
                                 responsePayload = String.valueOf(SECRET_CODE);
                             } else {
