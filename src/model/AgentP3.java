@@ -713,8 +713,6 @@ public class AgentP3 extends Agent {
     }
     
     
-    
-    
     //--------------------------------------------------------------------------
     // Comportamiento ciclico del agente
     // UNTOUCHED BY P3
