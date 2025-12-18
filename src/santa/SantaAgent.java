@@ -122,10 +122,10 @@ public class SantaAgent extends Agent {
                     reply.setContent("Error interno: " + e.getMessage());
                 }
 
-                simulateThinking();
 
                 // Registro de SEND basado en ElfTranslator
-                if (haveLog) {
+                if (haveLog) {   
+                    simulateThinking();
                     logger.addLogEntry("""
                                        #SEND - "%s"# Santa envia respuesta a %s: "%s"
                                        """.formatted(

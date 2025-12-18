@@ -98,15 +98,16 @@ public class RudolphAgent extends Agent {
                     logContent = response.getContent();
                 }
                 
-                // Simulación de espera
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(RudolphAgent.class.getName()).log(Level.SEVERE, null, ex);
-                }
+
                 
                 // Registro de SEND basado en ElfTranslator
                 if (haveLog) {
+                    // Simulación de espera
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(RudolphAgent.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     logger.addLogEntry("""
                                        #SEND - "%s"# Rudolph envia respuesta a %s: "%s"
                                        """.formatted(

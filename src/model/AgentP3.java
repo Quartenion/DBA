@@ -91,7 +91,7 @@ public class AgentP3 extends Agent {
         
         if (waitMillis > 0) {
             try {
-                Thread.sleep(waitMillis);
+                Thread.sleep(0);
             } catch (InterruptedException ex) {
                 Logger.getLogger(AgentP3.class.getName()).log(Level.SEVERE, null, ex);
             }
